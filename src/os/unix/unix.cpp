@@ -18,8 +18,16 @@
 #include "../../string_func.h"
 #include "../../fios.h"
 
-
+#if defined(PSVITA)
+#include <psp2/kernel/threadmgr.h>
+#include <psp2/io/dirent.h>
+#include <psp2/appmgr.h>
+#include <thread>
+#include "../../fileio_func.h"
+#else
 #include <dirent.h>
+
+#endif
 #include <unistd.h>
 #include <sys/stat.h>
 #include <time.h>
@@ -97,6 +105,9 @@ bool FiosGetDiskFreeSpace(const char *path, uint64 *tot)
 
 	if (statvfs(path, &s) != 0) return false;
 	free = (uint64)s.f_frsize * s.f_bavail;
+#elif defined(PSVITA)
+	uint64_t max_size = 0;
+	sceAppMgrGetDevInfo("ux0:", &max_size, &free);
 #endif
 	if (tot != NULL) *tot = free;
 	return true;
@@ -258,10 +269,19 @@ void cocoaSetupAutoreleasePool();
 void cocoaReleaseAutoreleasePool();
 #endif
 
+
+#if defined(PSVITA)
+// Set heap to 100mb (default is 32mb)
+int _newlib_heap_size_user = 100 * 1024 * 1024;
+#endif
+
 int CDECL main(int argc, char *argv[])
 {
+/* PS Vita has null pointer as argv */
+#if !defined(PSVITA) && !defined(__SWITCH__)
 	/* Make sure our arguments contain only valid UTF-8 characters. */
 	for (int i = 0; i < argc; i++) ValidateString(argv[i]);
+#endif
 
 #ifdef WITH_COCOA
 	cocoaSetupAutoreleasePool();
@@ -308,7 +328,9 @@ bool GetClipboardContents(char *buffer, const char *last)
 
 void CSleep(int milliseconds)
 {
-	#if defined(__BEOS__)
+	#if defined(PSP) || defined(PSVITA)
+		sceKernelDelayThread(milliseconds * 1000);
+	#elif defined(__BEOS__)
 		snooze(milliseconds * 1000);
 	#elif defined(__AMIGA__)
 	{
@@ -336,7 +358,7 @@ void CSleep(int milliseconds)
 uint GetCPUCoreCount()
 {
 	uint count = 1;
-#ifdef HAS_SYSCTL
+#if defined(HAS_SYSCTL) && !defined(PSVITA) && !defined(__SWITCH__)
 	int ncpu = 0;
 	size_t len = sizeof(ncpu);
 
@@ -354,9 +376,11 @@ uint GetCPUCoreCount()
 #endif /* #ifdef OPENBSD */
 
 	if (ncpu > 0) count = ncpu;
-#elif defined(_SC_NPROCESSORS_ONLN)
+#elif defined(_SC_NPROCESSORS_ONLN) && !defined(PSVITA) && !defined(__SWITCH__)
 	long res = sysconf(_SC_NPROCESSORS_ONLN);
 	if (res > 0) count = res;
+#elif defined(PSVITA) || defined(__SWITCH__)
+	count = 4;
 #endif
 
 	return count;
@@ -364,6 +388,8 @@ uint GetCPUCoreCount()
 
 void OSOpenBrowser(const char *url)
 {
+// I think this is actually possible on vita, disable for now
+#if !defined(PSVITA) && !defined(__SWITCH__)
 	pid_t child_pid = fork();
 	if (child_pid != 0) return;
 
@@ -374,5 +400,23 @@ void OSOpenBrowser(const char *url)
 	execvp(args[0], const_cast<char * const *>(args));
 	DEBUG(misc, 0, "Failed to open url: %s", url);
 	exit(0);
+#endif
 }
+
+#if defined(PSVITA)
+
+extern "C"
+{
+	void __sinit(struct _reent *);
+}
+
+__attribute__((constructor(101)))
+void pthread_setup(void)
+{
+	pthread_init();
+	__sinit(_REENT);
+}
+
+#endif
+
 #endif

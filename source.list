@@ -1092,7 +1092,17 @@ video/null_v.cpp
 	video/allegro_v.cpp
 #end
 #if SDL
-	video/sdl_v.cpp
+	#if PSVITA
+		video/sdl_vita_v.cpp
+		video/vita_touch.cpp
+	#else
+		#if SWITCH
+			video/sdl_vita_v.cpp
+			video/vita_touch.cpp
+		#else
+			video/sdl_v.cpp
+		#end
+	#end
 #end
 #if WIN32
 	video/win32_v.cpp
@@ -1120,7 +1130,19 @@ music/midifile.cpp
 	#else
 		#if MORPHOS
 		#else
-			music/extmidi.cpp
+			#if DOS
+			#else
+				#if MORPHOS
+				#else
+					#if PSVITA
+					#else
+						#if SWITCH
+						#else
+							music/extmidi.cpp
+						#end
+					#end
+				#end
+			#end
 		#end
 	#end
 #end
@@ -1143,7 +1165,15 @@ sound/null_s.cpp
 	sound/allegro_s.cpp
 #end
 #if SDL
-	sound/sdl_s.cpp
+	#if PSVITA
+		sound/sdl_vita_s.cpp
+	#else
+		#if SWITCH
+			sound/sdl_vita_s.cpp
+		#else
+			sound/sdl_s.cpp
+		#end
+	#end
 #end
 #if WIN32
 	sound/win32_s.cpp

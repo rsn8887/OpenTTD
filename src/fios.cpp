@@ -357,7 +357,11 @@ static void FiosGetFileList(SaveLoadOperation fop, fios_getlist_callback_proc *c
 {
 	struct stat sb;
 	struct dirent *dirent;
+#if defined(PSVITA)
+	DIR dir;
+#else
 	DIR *dir;
+#endif
 	FiosItem *fios;
 	int sort_start;
 	char d_name[sizeof(fios->name)];
@@ -389,6 +393,10 @@ static void FiosGetFileList(SaveLoadOperation fop, fios_getlist_callback_proc *c
 				seprintf(fios->title, lastof(fios->title), "%s" PATHSEP " (Directory)", d_name);
 				str_validate(fios->title, lastof(fios->title));
 			}
+#if defined(PSVITA)
+			free(dirent->dirinfo);
+			free(dirent);
+#endif
 		}
 		closedir(dir);
 	}

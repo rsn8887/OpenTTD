@@ -25,6 +25,10 @@
 # include "core/mem_func.hpp"
 #endif
 
+#ifdef PSVITA
+# include <psp2/io/fcntl.h>
+#endif
+
 #include "safeguards.h"
 
 /**
@@ -108,7 +112,19 @@ bool IniFile::SaveToDisk(const char *filename)
 	shfopt.pFrom  = tfile_new;
 	shfopt.pTo    = tfilename;
 	SHFileOperation(&shfopt);
+#elif defined(PSVITA)
+	// Remove the file first
+	int err;
+	if ((err = sceIoRemove(filename)) < 0) {
+		DEBUG(misc, 0, "Failed to remove dest file first, %x", err);
+	}
+	if ((err = sceIoRename(file_new, filename)) < 0) {
+		DEBUG(misc, 0, "Renaming %s to %s failed; configuration not saved %x", file_new, filename, err);
+	}
 #else
+#if defined(__SWITCH__)
+	unlink(filename); // remove old file first
+#endif
 	if (rename(file_new, filename) < 0) {
 		DEBUG(misc, 0, "Renaming %s to %s failed; configuration not saved", file_new, filename);
 	}

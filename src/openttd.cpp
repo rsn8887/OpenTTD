@@ -71,6 +71,11 @@
 
 #include "safeguards.h"
 
+#if defined(PSVITA)
+// overclocking features
+#include <psp2/power.h>
+#endif
+
 void CallLandscapeTick();
 void IncreaseDate();
 void DoPaletteAnimations();
@@ -88,6 +93,48 @@ extern char *_config_file;
  * @param s the string to print.
  * @note Does NEVER return.
  */
+
+// Vita has no console so we'll forward it all over debugnet
+#if defined(PSVITA) || defined(__SWITCH__)
+
+void CDECL usererror(const char *s, ...)
+{
+	va_list va;
+	char buf[512];
+
+	va_start(va, s);
+	vseprintf(buf, lastof(buf), s, va);
+	va_end(va);
+
+	//sceClibPrintf("usererror: %s\n", buf);
+}
+
+void CDECL error(const char *s, ...)
+{
+	va_list va;
+	char buf[512];
+
+	va_start(va, s);
+	vseprintf(buf, lastof(buf), s, va);
+	va_end(va);
+
+	//sceClibPrintf("error: %s\n", buf);
+}
+
+void CDECL ShowInfoF(const char *s, ...)
+{
+	va_list va;
+	char buf[512];
+
+	va_start(va, s);
+	vseprintf(buf, lastof(buf), s, va);
+	va_end(va);
+
+	//sceClibPrintf("ShowInfoF: %s\n", buf);
+}
+
+#else
+
 void CDECL usererror(const char *s, ...)
 {
 	va_list va;
@@ -140,6 +187,7 @@ void CDECL ShowInfoF(const char *str, ...)
 	ShowInfo(buf);
 }
 
+#endif
 /**
  * Show the help message when someone passed a wrong parameter.
  */
@@ -566,7 +614,6 @@ int openttd_main(int argc, char *argv[])
 
 	GetOptData mgo(argc - 1, argv + 1, _options);
 	int ret = 0;
-
 	int i;
 	while ((i = mgo.GetOpt()) != -1) {
 		switch (i) {
@@ -700,7 +747,23 @@ int openttd_main(int argc, char *argv[])
 		goto exit_noshutdown;
 	}
 
+#if defined(WINCE) && defined(_DEBUG)
+	/* Switch on debug lvl 4 for WinCE if Debug release, as you can't give params, and you most likely do want this information */
+	SetDebugString("4");
+#endif
+
+
+#if defined(PSVITA)
+	// TODO: Use shared paths here instead of hardcoded.
+	// argv[0] is NULL on vita, will crash
+	DeterminePaths("ux0:/data/openttd/");
+	scePowerSetArmClockFrequency(444);
+    scePowerSetGpuClockFrequency(222);
+    scePowerSetBusClockFrequency(222);
+    scePowerSetGpuXbarClockFrequency(222);
+#else
 	DeterminePaths(argv[0]);
+#endif
 	TarScanner::DoScan(TarScanner::BASESET);
 
 #if defined(ENABLE_NETWORK)
@@ -757,7 +820,10 @@ int openttd_main(int argc, char *argv[])
 	/* Initialize game palette */
 	GfxInitPalettes();
 
-	DEBUG(misc, 1, "Loading blitter...");
+#if defined(PSVITA) || defined(__SWITCH__) 
+	// Force the 8bpp blitter, anything else is too slow
+	blitter = "8bpp-optimized";
+#endif
 	if (blitter == NULL && _ini_blitter != NULL) blitter = stredup(_ini_blitter);
 	_blitter_autodetected = StrEmpty(blitter);
 	/* Activate the initial blitter.
@@ -775,7 +841,10 @@ int openttd_main(int argc, char *argv[])
 				usererror("Failed to select requested blitter '%s'; does it exist?", blitter);
 		}
 	}
+#if !defined(PSVITA) && !defined(__SWITCH__)
+	// turns out freeing stack crashes, don't do this on vita
 	free(blitter);
+#endif
 
 	if (videodriver == NULL && _ini_videodriver != NULL) videodriver = stredup(_ini_videodriver);
 	DriverFactoryBase::SelectDriver(videodriver, Driver::DT_VIDEO);
@@ -851,7 +920,6 @@ int openttd_main(int argc, char *argv[])
 	/* Take our initial lock on whatever we might want to do! */
 	_modal_progress_paint_mutex->BeginCritical();
 	_modal_progress_work_mutex->BeginCritical();
-
 	GenerateWorld(GWM_EMPTY, 64, 64); // Make the viewport initialization happy
 	WaitTillGeneratedWorld();
 

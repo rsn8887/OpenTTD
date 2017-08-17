@@ -12,6 +12,10 @@
 #ifndef DEBUG_H
 #define DEBUG_H
 
+#if defined(PSVITA)
+//#include <psp2/kernel/clib.h>
+#endif
+
 #include "cpu.h"
 
 /* Debugging messages policy:

@@ -28,6 +28,10 @@
 #include <sys/stat.h>
 #include <algorithm>
 
+#ifdef PSVITA
+#include <psp2/io/stat.h>
+#endif
+
 #ifdef WITH_XDG_BASEDIR
 #include "basedir.h"
 #endif
@@ -47,6 +51,10 @@ struct Fio {
 	byte buffer_start[FIO_BUFFER_SIZE];    ///< local buffer when read from file
 	const char *filenames[MAX_FILE_SLOTS]; ///< array of filenames we (should) have open
 	char *shortnames[MAX_FILE_SLOTS];      ///< array of short names for spriteloader's use
+#if defined(PSVITA)
+	Subdirectory cur_subdirectory;		   ///< current subdirectory
+	Subdirectory subdirectories[MAX_FILE_SLOTS]; ///< subdirectories
+#endif
 #if defined(LIMITED_FDS)
 	uint open_handles;                     ///< current amount of open handles
 	uint usage_count[MAX_FILE_SLOTS];      ///< count how many times this file has been opened
@@ -60,6 +68,76 @@ static bool _do_scan_working_directory = true;
 
 extern char *_config_file;
 extern char *_highscore_file;
+
+
+#if defined(PSVITA)
+DIR opendir(const char *path) {
+	SceUID uid = sceIoDopen(path);
+	return uid;
+}
+
+struct dirent *readdir(DIR d) {
+	struct dirent *dir = MallocT<struct dirent>(1);
+	struct SceIoDirent *sce_dir = MallocT<SceIoDirent>(1);
+
+	if (sceIoDread(d, sce_dir) < 0)
+	{
+		return NULL;
+	}
+
+	dir->d_name = sce_dir->d_name;
+	dir->dir = d;
+	dir->dirinfo = sce_dir;
+
+	if (strlen(sce_dir->d_name) <= 0)
+	{
+		free(sce_dir);
+		free(dir);
+		return NULL;
+	}
+
+	return dir;
+}
+
+int closedir(DIR d) {
+	return sceIoDclose(d);
+}
+
+// Fix the current open/invalidated file handle
+void FioFixFileHnds()
+{
+	char buf[MAX_PATH];
+
+	FioFindFullPath(buf, lastof(buf), _fio.cur_subdirectory, _fio.filename);
+
+	int slot = -1;
+
+	// Can't just fix up cur_fh, we also need to update the entry
+	// in _fio.handles before the new handle is obtained
+	for (unsigned int xx = 0; xx < MAX_FILE_SLOTS; xx++)
+	{
+		if (_fio.handles[xx] == _fio.cur_fh)
+		{
+			slot = xx;
+		}
+	}
+
+	// as far as I can tell all instances of slot files are opened
+	// with rb - if this is incorrect can add tracking of mode per file
+	// as well
+	_fio.cur_fh = fopen(buf, "rb");
+	if (_fio.cur_fh < 0)
+		DEBUG(misc, 0, "Failed to fix hnd\n");
+
+	if ((_fio.cur_fh, 9, SEEK_SET) < 0)
+		DEBUG(misc, 0, "Failed to seek in fixed hnd\n");
+
+	// Finally update the stored handle
+	if (slot != -1)
+		_fio.handles[slot] = _fio.cur_fh;
+}
+
+#endif
 
 /**
  * Get position in the current file.
@@ -92,6 +170,14 @@ void FioSeekTo(size_t pos, int mode)
 	_fio.pos = pos;
 	if (fseek(_fio.cur_fh, _fio.pos, SEEK_SET) < 0) {
 		DEBUG(misc, 0, "Seeking in %s failed", _fio.filename);
+		// On the Vita, file handles seem to get invalidated if the device
+		// is suspended, attempt to re-open the file
+#if defined(PSVITA)
+		FioFixFileHnds();
+		if (fseek(_fio.cur_fh, _fio.pos, SEEK_SET) < 0) {
+			DEBUG(misc, 0, "Vita - Fix failed, expect a crash soon.");
+		}
+#endif
 	}
 }
 
@@ -101,7 +187,11 @@ static void FioRestoreFile(int slot)
 	/* Do we still have the file open, or should we reopen it? */
 	if (_fio.handles[slot] == NULL) {
 		DEBUG(misc, 6, "Restoring file '%s' in slot '%d' from disk", _fio.filenames[slot], slot);
+#ifdef PSVITA
+		FioOpenFile(slot, _fio.filenames[slot], _fio.subdirectories[slot]);
+#else
 		FioOpenFile(slot, _fio.filenames[slot]);
+#endif
 	}
 	_fio.usage_count[slot]++;
 }
@@ -123,6 +213,9 @@ void FioSeekToFile(uint8 slot, size_t pos)
 	assert(f != NULL);
 	_fio.cur_fh = f;
 	_fio.filename = _fio.filenames[slot];
+#ifdef PSVITA
+	_fio.cur_subdirectory = _fio.subdirectories[slot];
+#endif
 	FioSeekTo(pos, SEEK_SET);
 }
 
@@ -201,7 +294,10 @@ static inline void FioCloseFile(int slot)
 
 		free(_fio.shortnames[slot]);
 		_fio.shortnames[slot] = NULL;
-
+		_fio.filenames[slot] = NULL;
+#if defined(PSVITA)
+		_fio.subdirectories[slot] = NO_DIRECTORY;
+#endif
 		_fio.handles[slot] = NULL;
 #if defined(LIMITED_FDS)
 		_fio.open_handles--;
@@ -261,7 +357,16 @@ void FioOpenFile(int slot, const char *filename, Subdirectory subdir)
 
 	FioCloseFile(slot); // if file was opened before, close it
 	_fio.handles[slot] = f;
+#if defined(PSVITA)
+	// TBH I'm not sure this should be a vita-only fix, this memory
+	// seems to be free'd higher up. In the non-vita build it's not an issue
+	// because the handles should stay valid so who cares if the filename gets
+	// fucked? but we need it to re-open later on
+	_fio.filenames[slot] = stredup(filename);
+	_fio.subdirectories[slot] = subdir;
+#else
 	_fio.filenames[slot] = filename;
+#endif
 
 	/* Store the filename without path and extension */
 	const char *t = strrchr(filename, PATHSEPCHAR);
@@ -549,6 +654,8 @@ void FioCreateDirectory(const char *name)
 	}
 
 	mkdir(OTTD2FS(buf), 0755);
+#elif defined(PSVITA)
+	sceIoMkdir(OTTD2FS(name), 0777);
 #else
 	mkdir(OTTD2FS(name), 0755);
 #endif
@@ -993,10 +1100,14 @@ extern void DetermineBasePaths(const char *exe);
  * For OSX application bundles '.app' is the required extension of the bundle,
  * so when we crop the path to there, when can remove the name of the bundle
  * in the same way we remove the name from the executable name.
+ * On the Vita, we skip this because unsupported
  * @param exe the path to the executable
  */
 static bool ChangeWorkingDirectoryToExecutable(const char *exe)
 {
+#if defined(PSVITA) || defined(__SWITCH__)
+	return true;
+#endif
 	char tmp[MAX_PATH];
 	strecpy(tmp, exe, lastof(tmp));
 
@@ -1056,6 +1167,23 @@ bool DoScanWorkingDirectory()
  */
 void DetermineBasePaths(const char *exe)
 {
+#if defined(PSVITA)
+	// For now we'll set all of these to ux0. Ideally we need to support
+	// loading from uma0:/ as well but add this later
+	_searchpaths[SP_PERSONAL_DIR] = "ux0:/data/openttd/";
+	_searchpaths[SP_SHARED_DIR] = "ux0:/data/openttd/";
+	_searchpaths[SP_BINARY_DIR] = "ux0:/data/openttd/";
+	_searchpaths[SP_WORKING_DIR] = "ux0:/data/openttd/";
+	_searchpaths[SP_INSTALLATION_DIR] = "ux0:/data/openttd/";
+	return;
+#elif defined(SWITCH)
+	_searchpaths[SP_PERSONAL_DIR] = "/switch/openttd/";
+	_searchpaths[SP_SHARED_DIR] = "/switch/openttd/";
+	_searchpaths[SP_BINARY_DIR] = "/switch/openttd/";
+	_searchpaths[SP_WORKING_DIR] = "/switch/openttd/";
+	_searchpaths[SP_INSTALLATION_DIR] = "/switch/openttd/";
+	return;
+#else
 	char tmp[MAX_PATH];
 #if defined(WITH_XDG_BASEDIR) && defined(WITH_PERSONAL_DIR)
 	const char *xdg_data_home = xdgDataHome(NULL);
@@ -1121,7 +1249,11 @@ void DetermineBasePaths(const char *exe)
 
 	/* Change the working directory to that one of the executable */
 	if (ChangeWorkingDirectoryToExecutable(exe)) {
-		if (getcwd(tmp, MAX_PATH) == NULL) *tmp = '\0';
+	// Skip getcwd for vita, doesn't support
+#if !defined(PSVITA) && !defined(__SWITCH__)
+		if (getcwd(tmp, MAX_PATH) == NULL)
+#endif
+			*tmp = '\0';
 		AppendPathSeparator(tmp, lastof(tmp));
 		_searchpaths[SP_BINARY_DIR] = stredup(tmp);
 	} else {
@@ -1147,6 +1279,7 @@ extern void cocoaSetApplicationBundleDir();
 	cocoaSetApplicationBundleDir();
 #else
 	_searchpaths[SP_APPLICATION_BUNDLE_DIR] = NULL;
+#endif
 #endif
 }
 #endif /* defined(_WIN32) */
@@ -1272,6 +1405,7 @@ void DeterminePaths(const char *exe)
 	extern char *_log_file;
 	_log_file = str_fmt("%sopenttd.log",  _personal_dir);
 #else /* ENABLE_NETWORK */
+
 	/* If we don't have networking, we don't need to make the directory. But
 	 * if it exists we keep it, otherwise remove it from the search paths. */
 	if (!FileExists(_searchpaths[SP_AUTODOWNLOAD_DIR]))  {
@@ -1362,15 +1496,23 @@ static uint ScanPath(FileScanner *fs, const char *extension, const char *path, s
 	uint num = 0;
 	struct stat sb;
 	struct dirent *dirent;
+
+#if defined(PSVITA)
+	DIR dir;
+#else
 	DIR *dir;
-
+#endif
 	if (path == NULL || (dir = ttd_opendir(path)) == NULL) return 0;
-
+	int i = 0;
 	while ((dirent = readdir(dir)) != NULL) {
 		const char *d_name = FS2OTTD(dirent->d_name);
 		char filename[MAX_PATH];
 
 		if (!FiosIsValidFile(path, dirent, &sb)) continue;
+#if defined(PSVITA)
+		free(dirent->dirinfo);
+		free(dirent);
+#endif
 
 		seprintf(filename, lastof(filename), "%s%s", path, d_name);
 

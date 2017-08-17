@@ -1223,7 +1223,12 @@ void DrawMouseCursor()
 	Blitter *blitter = BlitterFactory::GetCurrentBlitter();
 
 	/* Redraw mouse cursor but only when it's inside the window */
+	// Vita seems to have a problem with losing the mouse at if this is present,
+	// bad (or lack of) SDL implementation maybe. Questionable as to whether we
+	// even want a cursor on the vita
+#if !defined(PSVITA) && !defined(__SWITCH__)
 	if (!_cursor.in_window) return;
+#endif
 
 	/* Don't draw the mouse cursor if it's already drawn */
 	if (_cursor.visible) {
