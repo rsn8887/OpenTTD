@@ -10,6 +10,7 @@
 /** @file sdl_v.cpp Implementation of the SDL video driver. */
 
 #if defined(WITH_SDL) && defined(__vita__)
+#include "vita.h"
 
 #include "../stdafx.h"
 #include "../openttd.h"
@@ -27,6 +28,82 @@
 #include <SDL.h>
 
 #include "../safeguards.h"
+
+#include "vita2d.h"
+#include "vita_touch.h"
+
+int _last_mouse_x = 0;
+int _last_mouse_y = 0;
+
+static int _hires_dx = 0; // sub-pixel-precision counters to allow slow pointer motion of <1 pixel per frame
+static int _hires_dy = 0;
+static int _pressed_right_stick_dirs[4] = { 0, 0, 0, 0 };
+
+static void RescaleAnalog(int *x, int *y, int dead);
+static void CreateAndPushSdlKeyEvent(uint32_t event_type, SDL_Keycode key);
+
+// these three internal structures from SDL2 are needed to gain access to the raw
+// vita2d_texture pointer to set it to ignore alpha values
+typedef struct SDL_SW_YUVTexture
+{
+	Uint32 format;
+	Uint32 target_format;
+	int w, h;
+	Uint8 *pixels;
+	int *colortab;
+	Uint32 *rgb_2_pix;
+	void (*Display1X) (int *colortab, Uint32 * rgb_2_pix,
+	unsigned char *lum, unsigned char *cr,
+	unsigned char *cb, unsigned char *out,
+	int rows, int cols, int mod);
+	void (*Display2X) (int *colortab, Uint32 * rgb_2_pix,
+	unsigned char *lum, unsigned char *cr,
+	unsigned char *cb, unsigned char *out,
+	int rows, int cols, int mod);
+
+	/* These are just so we don't have to allocate them separately */
+	Uint16 pitches[3];
+	Uint8 *planes[3];
+
+	/* This is a temporary surface in case we have to stretch copy */
+	SDL_Surface *stretch;
+	SDL_Surface *display;
+} SDL_SW_YUVTexture;
+
+/* Define the SDL texture structure */
+typedef struct SDL_Texture
+{
+	const void *magic;
+	Uint32 format;              /**< The pixel format of the texture */
+	int access;                 /**< SDL_TextureAccess */
+	int w;                      /**< The width of the texture */
+	int h;                      /**< The height of the texture */
+	int modMode;                /**< The texture modulation mode */
+	SDL_BlendMode blendMode;    /**< The texture blend mode */
+	Uint8 r, g, b, a;           /**< Texture modulation values */
+
+	SDL_Renderer *renderer;
+
+	/* Support for formats not supported directly by the renderer */
+	SDL_Texture *native;
+	SDL_SW_YUVTexture *yuv;
+	void *pixels;
+	int pitch;
+	SDL_Rect locked_rect;
+
+	void *driverdata;           /**< Driver specific texture representation */
+
+	SDL_Texture *prev;
+	SDL_Texture *next;
+} SDL_Texture;
+
+typedef struct VITA_TextureData
+{
+	vita2d_texture	*tex;
+	unsigned int	pitch;
+	unsigned int	w;
+	unsigned int	h;
+} VITA_TextureData;
 
 static FVideoDriver_SDL iFVideoDriver_SDL;
 
@@ -63,7 +140,7 @@ static int _requested_hwpalette; /* Did we request a HWPALETTE for the current v
 #define VITA_JOY_TRIANGLE 0
 #define VITA_JOY_CIRCLE   1
 #define VITA_JOY_CROSS    2
-#define VITA_JOY_SQUARE	  3
+#define VITA_JOY_SQUARE   3
 
 #define VITA_JOY_LTRIGGER 4
 #define VITA_JOY_RTRIGGER 5
@@ -74,11 +151,8 @@ static int _requested_hwpalette; /* Did we request a HWPALETTE for the current v
 #define VITA_JOY_UP       8
 #define VITA_JOY_RIGHT    9
 
-#define VITA_JOY_SELECT	 10
+#define VITA_JOY_SELECT  10
 #define VITA_JOY_START   11
-
-#define VITA_TOUCH_FRONT  0
-#define VITA_TOUCH_BACK	  1
 
 #define OTTD_DIR_LEFT     1
 #define OTTD_DIR_UP       2
@@ -87,19 +161,6 @@ static int _requested_hwpalette; /* Did we request a HWPALETTE for the current v
 
 // Scale whatever we have to the vita screen resolution on GPU
 SDL_Rect _sdldest {0, 0, 960, 544};
-
-// PS Vita max touch coordinates
-// Should these be in the touch headers instead?
-#define MAX_TOUCH_X (960 * 2)
-#define HALF_TOUCH_X 960
-#define MAX_TOUCH_Y (544 * 2)
-#define HALF_TOUCH_Y 544
-
-#define VITA_JOYSTICK_DEADZONE 16000
-
-// These get calculated at driver init
-static float _touch_scale_x = 0.f;
-static float _touch_scale_y = 0.f;
 
 static int _cursor_move_x = 0, _cursor_move_y = 0;
 
@@ -199,17 +260,14 @@ static void DrawSurfaceToScreenThread(void *)
 	_draw_thread->Exit();
 }
 
-// Vita only has two resolutions that really work. Can look at scaling others later maybe
 static const Dimension _default_resolutions[] = {
-	{ 480,  272},
-	{ 720, 	408},
 	{ 960,	544}
 };
 
 static void GetVideoModes()
 {
 	memcpy(_resolutions, _default_resolutions, sizeof(_default_resolutions));
-	_num_resolutions = 3;
+	_num_resolutions = 1;
 }
 
 static void GetAvailableVideoMode(uint *w, uint *h)
@@ -236,6 +294,204 @@ static void GetAvailableVideoMode(uint *w, uint *h)
 	*h = _resolutions[best].height;
 }
 
+static void HandleAnalogSticks(void)
+{
+	int left_x = SDL_JoystickGetAxis(_sdl_joystick, 0);
+	int left_y = SDL_JoystickGetAxis(_sdl_joystick, 1);
+	RescaleAnalog(&left_x, &left_y, 3000);
+	_hires_dx += left_x; // sub-pixel precision to allow slow mouse motion at speeds < 1 pixel/frame
+	_hires_dy += left_y;
+
+	const int slowdown = 4096;
+
+	if (_hires_dx != 0 || _hires_dy != 0) {
+		int xrel = _hires_dx / slowdown;
+		int yrel = _hires_dy / slowdown;
+		_hires_dx %= slowdown;
+		_hires_dy %= slowdown;
+		if (xrel != 0 || yrel != 0) {
+			// limit joystick mouse to screen coords, same as physical mouse
+			int x = _last_mouse_x + xrel;
+			int y = _last_mouse_y + yrel;
+			if (x < 0) {
+				x = 0;
+				xrel = 0 - _last_mouse_x;
+			}
+			if (x > VITA_DISPLAY_WIDTH) {
+				x = VITA_DISPLAY_WIDTH;
+				xrel = VITA_DISPLAY_WIDTH - _last_mouse_x;
+			}
+			if (y < 0) {
+				y = 0;
+				yrel = 0 - _last_mouse_y;
+			}
+			if (y > VITA_DISPLAY_HEIGHT) {
+				y = VITA_DISPLAY_HEIGHT;
+				yrel = VITA_DISPLAY_HEIGHT - _last_mouse_y;
+			}
+			SDL_Event event;
+			event.type = SDL_MOUSEMOTION;
+			event.motion.x = x;
+			event.motion.y = y;
+			event.motion.xrel = xrel;
+			event.motion.yrel = yrel;
+			SDL_PushEvent(&event);
+		}
+	}
+
+	// map right stick to map scrolling
+	float right_x = SDL_JoystickGetAxis(_sdl_joystick, 2);
+	float right_y = -1 * SDL_JoystickGetAxis(_sdl_joystick, 3);
+	float right_joy_dead_zone_squared = 10240.0*10240.0;
+	float slope = 0.414214f; // tangent of 22.5 degrees for size of angular zones
+
+	int up = 0;
+	int down = 0;
+	int left = 0;
+	int right = 0;
+
+	if ((right_x * right_x + right_y * right_y) > right_joy_dead_zone_squared) {
+
+		// upper right quadrant
+		if (right_y > 0 && right_x > 0)
+		{
+			if (right_y > slope * right_x)
+			up = 1;
+			if (right_x > slope * right_y)
+			right = 1;
+		}
+		// upper left quadrant
+		else if (right_y > 0 && right_x <= 0)
+		{
+			if (right_y > slope * (-right_x))
+			up = 1;
+			if ((-right_x) > slope * right_y)
+			left = 1;
+		}
+		// lower right quadrant
+		else if (right_y <= 0 && right_x > 0)
+		{
+			if ((-right_y) > slope * right_x)
+			down = 1;
+			if (right_x > slope * (-right_y))
+			right = 1;
+		}
+		// lower left quadrant
+		else if (right_y <= 0 && right_x <= 0)
+		{
+			if ((-right_y) > slope * (-right_x))
+			down = 1;
+			if ((-right_x) > slope * (-right_y))
+			left = 1;
+		}
+
+		_dirkeys |= ((!_pressed_right_stick_dirs[0] && down) ? OTTD_DIR_DOWN : 0) |
+					((!_pressed_right_stick_dirs[1] && left) ? OTTD_DIR_LEFT : 0) |
+					((!_pressed_right_stick_dirs[2] && up) ? OTTD_DIR_UP : 0) |
+					((!_pressed_right_stick_dirs[3] && right) ? OTTD_DIR_RIGHT : 0);
+
+	}
+
+	uint8 tmp = ((_pressed_right_stick_dirs[0] && !down) ? OTTD_DIR_DOWN : 0) |
+				((_pressed_right_stick_dirs[1] && !left) ? OTTD_DIR_LEFT : 0) |
+				((_pressed_right_stick_dirs[2] && !up) ? OTTD_DIR_UP : 0) |
+				((_pressed_right_stick_dirs[3] && !right) ? OTTD_DIR_RIGHT : 0);
+	_dirkeys = _dirkeys &~tmp;
+
+	if (down)
+		_pressed_right_stick_dirs[0] = 1;
+	else
+		_pressed_right_stick_dirs[0] = 0;
+
+	if (left)
+		_pressed_right_stick_dirs[1] = 1;
+	else
+		_pressed_right_stick_dirs[1] = 0;
+
+	if (up)
+		_pressed_right_stick_dirs[2] = 1;
+	else
+		_pressed_right_stick_dirs[2] = 0;
+
+	if (right)
+		_pressed_right_stick_dirs[3] = 1;
+	else
+		_pressed_right_stick_dirs[3] = 0;
+}
+
+static void RescaleAnalog(int *x, int *y, int dead)
+{
+	//radial and scaled dead_zone
+	//http://www.third-helix.com/2013/04/12/doing-thumbstick-dead-zones-right.html
+	//input and output values go from -32767...+32767;
+
+	//the maximum is adjusted to account for SCE_CTRL_MODE_DIGITALANALOG_WIDE
+	//where a reported maximum axis value corresponds to 80% of the full range
+	//of motion of the analog stick
+
+	if (dead == 0) return;
+	if (dead >= 32767) {
+		*x = 0;
+		*y = 0;
+		return;
+	}
+
+	const float max_axis = 32767.0f;
+	float analog_x = (float) *x;
+	float analog_y = (float) *y;
+	float dead_zone = (float) dead;
+
+	float magnitude = sqrtf(analog_x * analog_x + analog_y * analog_y);
+	if (magnitude >= dead_zone) {
+		//adjust maximum magnitude
+		float abs_analog_x = fabs(analog_x);
+		float abs_analog_y = fabs(analog_y);
+		float max_x;
+		float max_y;
+		if (abs_analog_x > abs_analog_y) {
+			max_x = max_axis;
+			max_y = (max_axis * analog_y) / abs_analog_x;
+		} else {
+			max_x = (max_axis * analog_x) / abs_analog_y;
+			max_y = max_axis;
+		}
+		float maximum = sqrtf(max_x * max_x + max_y * max_y);
+		if (maximum > 1.25f * max_axis) maximum = 1.25f * max_axis;
+		if (maximum < magnitude) maximum = magnitude;
+
+		// find scaled axis values with magnitudes between zero and maximum
+		float scalingFactor = maximum / magnitude * (magnitude - dead_zone) / (maximum - dead_zone);
+		analog_x = (analog_x * scalingFactor);
+		analog_y = (analog_y * scalingFactor);
+
+		// clamp to ensure results will never exceed the max_axis value
+		float clamping_factor = 1.0f;
+		abs_analog_x = fabs(analog_x);
+		abs_analog_y = fabs(analog_y);
+		if (abs_analog_x > max_axis || abs_analog_y > max_axis){
+			if (abs_analog_x > abs_analog_y)
+				clamping_factor = max_axis / abs_analog_x;
+			else
+				clamping_factor = max_axis / abs_analog_y;
+		}
+
+		*x = (int) (clamping_factor * analog_x);
+		*y = (int) (clamping_factor * analog_y);
+	} else {
+		*x = 0;
+		*y = 0;
+	}
+}
+
+static void CreateAndPushSdlKeyEvent(uint32_t event_type, SDL_Keycode key) 
+{
+	SDL_Event event;
+	event.type = event_type;
+	event.key.keysym.sym = key;
+	event.key.keysym.mod = 0;
+	SDL_PushEvent(&event);
+}
+
 bool VideoDriver_SDL::CreateMainSurface(uint w, uint h)
 {
 	// TODO: Implement destroying and recreating this so we can change resolution
@@ -250,13 +506,22 @@ bool VideoDriver_SDL::CreateMainSurface(uint w, uint h)
 	char caption[32];
 	seprintf(caption, lastof(caption), "OpenTTD %s", _openttd_revision);
 
-	_sdl_window = SDL_CreateWindow(caption, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, SDL_WINDOW_SHOWN);
-	_sdl_renderer = SDL_CreateRenderer(_sdl_window, -1, 0);
-	_sdl_screentext = SDL_CreateTexture(_sdl_renderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_STREAMING, w, h);
-	_sdl_realsurface = SDL_CreateRGBSurface(0, w, h, 8, 0, 0, 0, 0);
+	_sdl_window = SDL_CreateWindow(caption, 0, 0, w, h, 0);
+	_sdl_renderer = SDL_CreateRenderer(_sdl_window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
 
-	_touch_scale_x = MAX_TOUCH_X / w;
-	_touch_scale_y = MAX_TOUCH_Y / h;
+	_sdl_screentext = SDL_CreateTexture(_sdl_renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING, w, h);
+	// On Vita, make sure alpha channel is ignored when rendering this texture
+	// this fixes the black screen problem on Vita in an efficient way.
+	VITA_TextureData *vita_texture = (VITA_TextureData *) _sdl_screentext->driverdata;
+	SceGxmTextureFilter min_filter = vita2d_texture_get_min_filter(vita_texture->tex);
+	SceGxmTextureFilter mag_filter = vita2d_texture_get_mag_filter(vita_texture->tex);
+
+	vita2d_free_texture(vita_texture->tex);
+	vita_texture->tex = vita2d_create_empty_texture_format(w, h, SCE_GXM_TEXTURE_FORMAT_X8U8U8U8_1BGR);
+	vita2d_texture_set_filters(vita_texture->tex, min_filter, mag_filter);
+
+	_sdl_realsurface = SDL_CreateRGBSurface(0, w, h, 8, 0, 0, 0, 0);
 
 	// Assign _screen values so the rest of openttd can draw to this surface
 	_screen.width = w;
@@ -264,7 +529,8 @@ bool VideoDriver_SDL::CreateMainSurface(uint w, uint h)
 	_screen.pitch = _cur_resolution.width;
 	_screen.dst_ptr = _sdl_realsurface->pixels;
 
-	Uint32 format = SDL_PIXELFORMAT_RGB888;
+	Uint32 format = SDL_PIXELFORMAT_ABGR8888;
+
 	_dst_format = SDL_AllocFormat(format);
 
 	SDL_InitSubSystem(SDL_INIT_JOYSTICK);
@@ -410,45 +676,9 @@ int VideoDriver_SDL::PollEvent()
 
 	//sceClibPrintf("ev.type: %d", ev.type);
 
+	HandleTouch(&ev);
+
 	switch (ev.type) {
-		case SDL_FINGERDOWN:
-			// #1 possible to touch by just hovering without this
-			// #2 this doesn't work, not accurate enough.
-			// works fine without checking pressure if the resolution
-			// is 480x272 but it's pretty awful if 960x544
-			//if (ev.tfinger.pressure > 40)
-			if (ev.tfinger.touchId == VITA_TOUCH_FRONT)
-			{
-				if (_cursor.UpdateCursorPosition(ev.tfinger.x / _touch_scale_x, ev.tfinger.y / _touch_scale_y, true))
-				{
-					SDL_WarpMouseInWindow(_sdl_window, _cursor.pos.x, _cursor.pos.y);
-				}
-				_left_button_down = true;
-				HandleMouseEvents();
-			}
-			break;
-		case SDL_FINGERUP:
-			if (ev.tfinger.touchId == VITA_TOUCH_FRONT)
-			{
-				if (_cursor.UpdateCursorPosition(ev.tfinger.x / _touch_scale_x, ev.tfinger.y / _touch_scale_y, true))
-				{
-					SDL_WarpMouseInWindow(_sdl_window, _cursor.pos.x, _cursor.pos.y);
-				}
-				_left_button_down = false;
-				_left_button_clicked = false;
-				HandleMouseEvents();
-			}
-			break;
-		case SDL_FINGERMOTION:
-			if (ev.tfinger.touchId == VITA_TOUCH_FRONT)
-			{
-				if (_cursor.UpdateCursorPosition(ev.tfinger.x / _touch_scale_x, ev.tfinger.y / _touch_scale_y, true))
-				{
-					SDL_WarpMouseInWindow(_sdl_window, _cursor.pos.x, _cursor.pos.y);
-				}
-				HandleMouseEvents();
-			}
-			break;
 		case SDL_JOYAXISMOTION:
 			// Don't handle this event, instead we poll on the draw loop for the most up-to-date joystick
 			// state.
@@ -457,6 +687,9 @@ int VideoDriver_SDL::PollEvent()
 			if (_cursor.UpdateCursorPosition(ev.motion.x, ev.motion.y, true)) {
 				SDL_CALL SDL_WarpMouseInWindow(_sdl_window, _cursor.pos.x, _cursor.pos.y);
 			}
+			// update joystick / touch mouse coords
+			_last_mouse_x = ev.motion.x;
+			_last_mouse_y = ev.motion.y;
 			HandleMouseEvents();
 			break;
 		case SDL_MOUSEWHEEL:
@@ -502,29 +735,27 @@ int VideoDriver_SDL::PollEvent()
 			}
 			break;
 		case SDL_JOYBUTTONDOWN:
-			// Circle for right click
-			// This doesn't seem to work
-			if (ev.jbutton.button == VITA_JOY_CIRCLE)
+			// Circle or L for right click
+			if (ev.jbutton.button == VITA_JOY_CIRCLE || ev.jbutton.button == VITA_JOY_LTRIGGER)
 			{
 				_right_button_down = true;
 				_right_button_clicked = true;
 				HandleMouseEvents();
 			}
-			// X for left click
-			// Also doesn't seem to work yet
-			else if (ev.jbutton.button == VITA_JOY_CROSS)
+			// X or R for left click
+			else if (ev.jbutton.button == VITA_JOY_CROSS || ev.jbutton.button == VITA_JOY_RTRIGGER)
 			{
 				_left_button_down = true;
 				HandleMouseEvents();
 			}
 			// Just pretend we're wheeling the mouse wheel
 			// than implementing this properly
-			else if (ev.jbutton.button == VITA_JOY_LTRIGGER)
+			else if (ev.jbutton.button == VITA_JOY_SQUARE)
 			{
 				// Zoom out
 				_cursor.wheel += 1;
 			}
-			else if (ev.jbutton.button == VITA_JOY_RTRIGGER)
+			else if (ev.jbutton.button == VITA_JOY_TRIANGLE)
 			{
 				// Zoom in
 				_cursor.wheel -= 1;
@@ -539,13 +770,13 @@ int VideoDriver_SDL::PollEvent()
 			}
 			break;
 		case SDL_JOYBUTTONUP:
-			if(ev.jbutton.button == VITA_JOY_CIRCLE)
+			if (ev.jbutton.button == VITA_JOY_CIRCLE || ev.jbutton.button == VITA_JOY_LTRIGGER)
 			{
 				_right_button_down = false;
 				_right_button_clicked = false;
 				HandleMouseEvents();
 			}
-			else if (ev.jbutton.button == VITA_JOY_CROSS)
+			else if (ev.jbutton.button == VITA_JOY_CROSS || ev.jbutton.button == VITA_JOY_RTRIGGER)
 			{
 				_left_button_down = false;
 				_left_button_clicked = false;
@@ -579,7 +810,7 @@ int VideoDriver_SDL::PollEvent()
 
 const char *VideoDriver_SDL::Start(const char * const *parm)
 {
-	if (SDL_Init(SDL_INIT_VIDEO) < 0)
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK) < 0)
 		return "SDL_INIT_VIDEO failed";
 
 	GetVideoModes();
@@ -699,25 +930,8 @@ void VideoDriver_SDL::MainLoop()
 			_ctrl_pressed  = !!(mod & KMOD_CTRL);
 			_shift_pressed = !!(mod & KMOD_SHIFT);
 
-			int joystick_x = SDL_JoystickGetAxis(_sdl_joystick, 0);
-			int joystick_y = SDL_JoystickGetAxis(_sdl_joystick, 1);
-
-			const int joystick_to_screen_divisor = 5000;
-
-			if (joystick_x > VITA_JOYSTICK_DEADZONE || joystick_x < -VITA_JOYSTICK_DEADZONE)
-				_cursor_move_x = joystick_x / joystick_to_screen_divisor;
-			else if (joystick_x < VITA_JOYSTICK_DEADZONE && joystick_x > -VITA_JOYSTICK_DEADZONE)
-				_cursor_move_x = 0;
-
-			if (joystick_y > VITA_JOYSTICK_DEADZONE || joystick_y < -VITA_JOYSTICK_DEADZONE)
-				_cursor_move_y = joystick_y / joystick_to_screen_divisor;
-
-			else if (joystick_y < VITA_JOYSTICK_DEADZONE && joystick_y > -VITA_JOYSTICK_DEADZONE)
-				_cursor_move_y = 0;
-
-			_cursor.UpdateCursorPosition(_cursor.pos.x + _cursor_move_x, _cursor.pos.y + _cursor_move_y, true);
-			SDL_CALL SDL_WarpMouseInWindow(_sdl_window, _cursor.pos.x, _cursor.pos.y);
-
+			HandleAnalogSticks();
+			FinishSimulatedMouseClicks();
 			HandleMouseEvents();
 
 			if (old_ctrl_pressed != _ctrl_pressed) HandleCtrlChanged();

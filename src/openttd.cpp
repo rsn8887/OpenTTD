@@ -75,6 +75,11 @@
 
 #include "safeguards.h"
 
+#if defined(__vita__)
+// overclocking features
+#include <psp2/power.h>
+#endif
+
 void CallLandscapeTick();
 void IncreaseDate();
 void DoPaletteAnimations();
@@ -750,6 +755,10 @@ int openttd_main(int argc, char *argv[])
 #if defined(__vita__)
 	// SetDebugString("9");
 	DeterminePaths("ux0:/data/openttd");
+	scePowerSetArmClockFrequency(444);
+	scePowerSetGpuClockFrequency(222);
+	scePowerSetBusClockFrequency(222);
+	scePowerSetGpuXbarClockFrequency(222);
 #else
 	DeterminePaths(argv[0]);
 #endif

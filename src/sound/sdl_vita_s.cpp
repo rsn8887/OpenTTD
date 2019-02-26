@@ -9,7 +9,7 @@
 
 /** @file sdl_s.cpp Playing sound via SDL. */
 
-#if defined(SDL) && defined(__vita__)
+#if defined(WITH_SDL) && defined(__vita__)
 
 #include "../stdafx.h"
 

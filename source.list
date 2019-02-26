@@ -1094,6 +1094,7 @@ video/null_v.cpp
 #if SDL
 	#if PSVITA
 		video/sdl_vita_v.cpp
+		video/vita_touch.cpp
 	#else
 		video/sdl_v.cpp
 	#end
