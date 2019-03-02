@@ -1,8 +1,8 @@
-# OpenTTD port for Switch
+# OpenTTD port for Switch (WIP)
 
-This is the Switch port of OpenTTD, a re-implementation of Transport Tycoon Deluxe.
+This is the Switch port of OpenTTD, a re-implementation of Transport Tycoon Deluxe. It is playable, but crashes on Save dialog currently.
 
-Port by @rsn8887, based on the Vita port by @angguss.
+Port by @rsn8887, based on the Vita port by @angguss with some control enhancements and I enabled sound (pull request to @angguss made).
 
 # Thanks
 
