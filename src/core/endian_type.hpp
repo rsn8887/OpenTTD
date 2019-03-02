@@ -35,7 +35,7 @@
 #	else
 #		define TTD_ENDIAN TTD_BIG_ENDIAN
 #	endif
-#elif defined(__SWITCH__)
+#elif defined(__SWITCH__) || defined(PSVITA)
 #   define TTD_ENDIAN TTD_LITTLE_ENDIAN
 #elif !defined(TESTING)
 #	include <sys/param.h>

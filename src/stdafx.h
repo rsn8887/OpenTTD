@@ -100,7 +100,7 @@
 	#define strcasecmp stricmp
 #endif
 
-#if defined(__SWITCH__)
+#if defined(__SWITCH__) || defined(PSVITA)
 	#include <strings.h>
 	#include <unistd.h>
 	#include <malloc.h>
