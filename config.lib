@@ -559,17 +559,6 @@ check_params() {
 
 	# Check if all params have valid values
 
-	# Endian only allows AUTO, LE and, BE
-	if [ -z "`echo $endian | egrep '^(AUTO|LE|BE|PREPROCESSOR)$'`" ]; then
-		log 1 "configure: error: invalid option --endian=$endian"
-		log 1 " Available options are: --endian=[AUTO|LE|BE]"
-		exit 1
-	fi
-	if [ "$endian" = "PREPROCESSOR" ] && [ "$os" != "OSX" ]; then
-		log 1 "configure: error: invalid option --endian=$endian"
-		log 1 " PREPROCESSOR is only available for OSX"
-		exit 1
-	fi
 	# OS only allows DETECT, UNIX, OSX, FREEBSD, DRAGONFLY, OPENBSD, NETBSD, MORPHOS, BEOS, HAIKU, SUNOS, CYGWIN, MINGW, OS2, DOS, WINCE, PSP, PSVITA and SWITCH
 	if [ -z "`echo $os | egrep '^(DETECT|UNIX|OSX|FREEBSD|DRAGONFLY|OPENBSD|NETBSD|HPUX|MORPHOS|BEOS|HAIKU|SUNOS|CYGWIN|MINGW|OS2|DOS|WINCE|PSP|PSVITA|SWITCH)$'`" ]; then
 		log 1 "configure: error: invalid option --os=$os"
@@ -1644,7 +1633,7 @@ make_cflags_and_ldflags() {
 	fi
 
 	if [ "$os" = "SWITCH" ]; then
-		CFLAGS="-Wl,-q $CFLAGS -D__SWITCH__ -march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE -fno-asynchronous-unwind-tables -funroll-loops -fno-unwind-tables -fno-optimize-sibling-calls -mlittle-endian -ffunction-sections -Wl,-q"
+		CFLAGS="-Wl,-q $CFLAGS -I$DEVKITPRO/portlibs/switch/include/SDL2 -I$DEVKITPRO/portlibs/switch/include -I$DEVKITPRO/devkitA64/aarch64-none-elf/include/ -D__SWITCH__ -march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE -fno-asynchronous-unwind-tables -funroll-loops -fno-unwind-tables -fno-optimize-sibling-calls -mlittle-endian -ffunction-sections -Wl,-q"
 		CXXFLAGS="$CXXFLAGS -Wl,-q"
 		# TODO: This needs to be autoconfigured properly (mostly SDL)
 		LIBS="$LIBS -specs=${DEVKITPRO}/libnx/switch.specs -L$DEVKITPRO/libnx/lib -Wl,--whole-archive -Wl,--no-whole-archive -lSDL2_mixer -lSDL2 -lEGL -lGLESv2 -lglapi -ldrm_nouveau -lpng -ljpeg -lfreetype -lm -lz -lnx -lstdc++"

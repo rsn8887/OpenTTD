@@ -100,6 +100,13 @@
 	#define strcasecmp stricmp
 #endif
 
+#if defined(__SWITCH__)
+	#include <strings.h>
+	#include <unistd.h>
+	#include <malloc.h>
+	#include <alloca.h>
+#endif
+
 #if defined(SUNOS) || defined(HPUX)
 	#include <alloca.h>
 #endif

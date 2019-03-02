@@ -33,6 +33,10 @@
 #include <time.h>
 #include <signal.h>
 
+#if defined(__SWITCH__)
+#include <switch.h>
+#endif
+
 #ifdef __APPLE__
 	#include <sys/mount.h>
 #elif (defined(_POSIX_VERSION) && _POSIX_VERSION >= 200112L) || defined(__GLIBC__)
@@ -252,7 +256,7 @@ void ShowInfo(const char *str)
 	fprintf(stderr, "%s\n", str);
 }
 
-#if !defined(__APPLE__)
+#if !defined(__APPLE__) && !defined(__SWITCH__) && !defined(PSVITA)
 void ShowOSErrorBox(const char *buf, bool system)
 {
 	/* All unix systems, except OSX. Only use escape codes on a TTY. */
@@ -330,6 +334,8 @@ void CSleep(int milliseconds)
 {
 	#if defined(PSP) || defined(PSVITA)
 		sceKernelDelayThread(milliseconds * 1000);
+	#elif defined(__SWITCH__)
+		svcSleepThread(milliseconds * 1000000ull);
 	#elif defined(__BEOS__)
 		snooze(milliseconds * 1000);
 	#elif defined(__AMIGA__)
