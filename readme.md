@@ -1,14 +1,17 @@
-# OpenTTD port for Switch (WIP)
+# OpenTTD port for Switch v1.0 (Work-in-Progress)
 
-This is the Switch port of OpenTTD, a re-implementation of Transport Tycoon Deluxe. It is playable, but crashes on Save dialog currently.
+This is the Switch port of OpenTTD, a re-implementation of Transport Tycoon Deluxe. It is playable, but crashes on save dialog currently.
 
-Port by @rsn8887, based on the Vita port by @angguss with some control enhancements and I enabled sound (pull request to @angguss made).
+Port by @rsn8887, based on the Vita port by @angguss. I made some control enhancements and I also enabled sound (pull request to @angguss made).
+
+![](https://i.postimg.cc/6QkN6fLY/openttd-1.jpg)
+![](https://i.postimg.cc/xCLVXN6Y/openttd-2.jpg)
 
 # Thanks
 
 Thanks to the many developers who worked on this game.
 
-Thanks to @angguss for his excellent Vita port.
+Thanks to @angguss for his excellent Vita port, on which this Switch port is based on.
 
 Thanks to my supporters on Patreon: Andyways, CountDuckula, Greg Gibson, Jesse Harlin, Özgür Karter, Matthew Machnee, and RadicalR.
 
@@ -23,9 +26,6 @@ cd cmake
 cmake ./ -DSWITCH_BUILD=ON
 make openttd_switch.vpk
 ```
-
-Then build
-
 
 openttd.vpk can be found in __cmake/__
 
@@ -69,7 +69,9 @@ If the above files are present, a new option will appear when you go to game set
  - A/right trigger = left mouse click 
  - Y = zoom-in 
  - X = zoom-out 
+ - Double click A/right trigger over a text field = bring up on-screen keyboard
  - The touch screen is used for indirect mouse input, like on a laptop touchpad. Move a single finger to move the mouse pointer. Use short tap for left click. Hold a single finger while tapping a second finger for right click. Drag with two fingers to drag and drop. 
+
 
 ### Current Limitations
 
@@ -77,7 +79,7 @@ If the above files are present, a new option will appear when you go to game set
 
 ### Changelog
 
-(WIP, Switch crashes on Load/Save dialog at the moment)
+(1.0 WIP) Switch crashes on load/save dialog at the moment
 
 - initial Switch release based on latest nightly
 - enabled sound fx (requires SAMPLE.CAT from original game, and enable `original dos` sound in settings)
