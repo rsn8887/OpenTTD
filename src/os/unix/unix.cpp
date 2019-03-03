@@ -18,12 +18,23 @@
 #include "../../string_func.h"
 #include "../../fios.h"
 
+#if defined(__vita__)
+	#include <psp2/kernel/threadmgr.h>
+	#include <psp2/io/dirent.h>
+	#include <psp2/appmgr.h>
+	#include "../../fileio_func.h"
+#else
+	#include <dirent.h>
+#endif
 
-#include <dirent.h>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <time.h>
 #include <signal.h>
+
+#ifdef __vita__
+#include <pthread.h>
+#endif
 
 #ifdef __APPLE__
 	#include <sys/mount.h>
@@ -97,6 +108,9 @@ bool FiosGetDiskFreeSpace(const char *path, uint64 *tot)
 
 	if (statvfs(path, &s) != 0) return false;
 	free = (uint64)s.f_frsize * s.f_bavail;
+#elif defined(__vita__)
+	uint64_t max_size = 0;
+	sceAppMgrGetDevInfo("ux0:", &max_size, &free);
 #endif
 	if (tot != NULL) *tot = free;
 	return true;
@@ -241,7 +255,7 @@ void ShowInfo(const char *str)
 	fprintf(stderr, "%s\n", str);
 }
 
-#if !defined(__APPLE__)
+#if !defined(__APPLE__) && !defined(__vita__)
 void ShowOSErrorBox(const char *buf, bool system)
 {
 	/* All unix systems, except OSX. Only use escape codes on a TTY. */
@@ -251,6 +265,11 @@ void ShowOSErrorBox(const char *buf, bool system)
 		fprintf(stderr, "Error: %s\n", buf);
 	}
 }
+#elif defined(__vita__)
+void ShowOSErrorBox(const char *buf, bool system)
+{
+	fprintf(stderr, "Error: %s\n", buf);
+}
 #endif
 
 #ifdef WITH_COCOA
@@ -258,10 +277,17 @@ void cocoaSetupAutoreleasePool();
 void cocoaReleaseAutoreleasePool();
 #endif
 
+#if defined(__vita__)
+// Set heap to 100mb (default is 32mb)
+int _newlib_heap_size_user = 100 * 1024 * 1024;
+#endif
+
 int CDECL main(int argc, char *argv[])
 {
+#if !defined(__vita__)
 	/* Make sure our arguments contain only valid UTF-8 characters. */
 	for (int i = 0; i < argc; i++) ValidateString(argv[i]);
+#endif
 
 #ifdef WITH_COCOA
 	cocoaSetupAutoreleasePool();
@@ -310,6 +336,8 @@ void CSleep(int milliseconds)
 {
 	#if defined(__BEOS__)
 		snooze(milliseconds * 1000);
+	#elif defined(__vita__)
+		sceKernelDelayThread(milliseconds * 1000);
 	#elif defined(__AMIGA__)
 	{
 		ULONG signals;
@@ -336,7 +364,9 @@ void CSleep(int milliseconds)
 uint GetCPUCoreCount()
 {
 	uint count = 1;
-#ifdef HAS_SYSCTL
+#ifdef __vita__
+	count = 4;
+#elif defined(HAS_SYSCTL)
 	int ncpu = 0;
 	size_t len = sizeof(ncpu);
 
@@ -364,6 +394,7 @@ uint GetCPUCoreCount()
 
 void OSOpenBrowser(const char *url)
 {
+#if !defined(__vita__)
 	pid_t child_pid = fork();
 	if (child_pid != 0) return;
 
@@ -374,5 +405,23 @@ void OSOpenBrowser(const char *url)
 	execvp(args[0], const_cast<char * const *>(args));
 	DEBUG(misc, 0, "Failed to open url: %s", url);
 	exit(0);
+#endif
 }
+#endif
+
+
+#if defined(__vita__)
+
+extern "C"
+{
+	void __sinit(struct _reent *);
+}
+
+__attribute__((constructor(101)))
+void pthread_setup(void)
+{
+	pthread_init();
+	__sinit(_REENT);
+}
+
 #endif

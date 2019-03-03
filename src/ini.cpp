@@ -19,6 +19,10 @@
 # include <unistd.h>
 #endif
 
+#if defined(__vita__)
+# include <psp2/io/fcntl.h>
+#endif
+
 #ifdef _WIN32
 # include <windows.h>
 # include <shellapi.h>
@@ -108,6 +112,15 @@ bool IniFile::SaveToDisk(const char *filename)
 	shfopt.pFrom  = tfile_new;
 	shfopt.pTo    = tfilename;
 	SHFileOperation(&shfopt);
+#elif defined(__vita__)
+	// Remove the file first
+	int err;
+	if ((err = sceIoRemove(filename)) < 0) {
+		DEBUG(misc, 0, "Failed to remove dest file first, %x", err);
+	}
+	if ((err = sceIoRename(file_new, filename)) < 0) {
+		DEBUG(misc, 0, "Renaming %s to %s failed; configuration not saved %x", file_new, filename, err);
+	}
 #else
 	if (rename(file_new, filename) < 0) {
 		DEBUG(misc, 0, "Renaming %s to %s failed; configuration not saved", file_new, filename);

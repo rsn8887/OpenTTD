@@ -273,8 +273,14 @@ char *CrashLog::LogLibraries(char *buffer, const char *last) const
 #else
 	{
 #endif
+#if SDL_MAJOR_VERSION == 2
+		SDL_version v;
+		SDL_GetVersion(&v);
+		buffer += seprintf(buffer, last, " SDL:        %d.%d.%d\n", v.major, v.minor, v.patch);
+#else
 		const SDL_version *v = SDL_CALL SDL_Linked_Version();
 		buffer += seprintf(buffer, last, " SDL:        %d.%d.%d\n", v->major, v->minor, v->patch);
+#endif
 	}
 #endif /* WITH_SDL */
 

@@ -69,6 +69,10 @@
 
 #include <stdarg.h>
 
+#ifdef __vita__
+#include <psp2/kernel/clib.h>
+#endif
+
 #include "safeguards.h"
 
 void CallLandscapeTick();
@@ -82,6 +86,45 @@ bool HandleBootstrap();
 extern Company *DoStartupNewCompany(bool is_ai, CompanyID company = INVALID_COMPANY);
 extern void ShowOSErrorBox(const char *buf, bool system);
 extern char *_config_file;
+
+#if defined(__vita__)
+void CDECL usererror(const char *s, ...)
+{
+	va_list va;
+	char buf[512];
+
+	va_start(va, s);
+	vseprintf(buf, lastof(buf), s, va);
+	va_end(va);
+
+	sceClibPrintf("usererror: %s\n", buf);
+}
+
+void CDECL error(const char *s, ...)
+{
+	va_list va;
+	char buf[512];
+
+	va_start(va, s);
+	vseprintf(buf, lastof(buf), s, va);
+	va_end(va);
+
+	sceClibPrintf("usererror: %s\n", buf);
+}
+
+void CDECL ShowInfoF(const char *s, ...)
+{
+	va_list va;
+	char buf[512];
+
+	va_start(va, s);
+	vseprintf(buf, lastof(buf), s, va);
+	va_end(va);
+
+	sceClibPrintf("usererror: %s\n", buf);
+}
+
+#else
 
 /**
  * Error handling for fatal user errors.
@@ -139,6 +182,8 @@ void CDECL ShowInfoF(const char *str, ...)
 	va_end(va);
 	ShowInfo(buf);
 }
+
+#endif
 
 /**
  * Show the help message when someone passed a wrong parameter.
@@ -560,12 +605,13 @@ int openttd_main(int argc, char *argv[])
 	_dedicated_forks = false;
 #endif /* ENABLE_NETWORK */
 
+	int ret = 0;
+
 	_game_mode = GM_MENU;
 	_switch_mode = SM_MENU;
 	_config_file = NULL;
 
 	GetOptData mgo(argc - 1, argv + 1, _options);
-	int ret = 0;
 
 	int i;
 	while ((i = mgo.GetOpt()) != -1) {
@@ -700,7 +746,13 @@ int openttd_main(int argc, char *argv[])
 		goto exit_noshutdown;
 	}
 
+
+#if defined(__vita__)
+	// SetDebugString("9");
+	DeterminePaths("ux0:/data/openttd");
+#else
 	DeterminePaths(argv[0]);
+#endif
 	TarScanner::DoScan(TarScanner::BASESET);
 
 #if defined(ENABLE_NETWORK)
@@ -758,6 +810,10 @@ int openttd_main(int argc, char *argv[])
 	GfxInitPalettes();
 
 	DEBUG(misc, 1, "Loading blitter...");
+#if defined(__vita__)
+	blitter = "8bpp-optimized";
+#endif
+
 	if (blitter == NULL && _ini_blitter != NULL) blitter = stredup(_ini_blitter);
 	_blitter_autodetected = StrEmpty(blitter);
 	/* Activate the initial blitter.
@@ -775,7 +831,9 @@ int openttd_main(int argc, char *argv[])
 				usererror("Failed to select requested blitter '%s'; does it exist?", blitter);
 		}
 	}
+#if !defined(__vita__)
 	free(blitter);
+#endif
 
 	if (videodriver == NULL && _ini_videodriver != NULL) videodriver = stredup(_ini_videodriver);
 	DriverFactoryBase::SelectDriver(videodriver, Driver::DT_VIDEO);

@@ -132,6 +132,22 @@ struct dirent { // XXX - only d_name implemented
 DIR *opendir(const TCHAR *path);
 struct dirent *readdir(DIR *d);
 int closedir(DIR *d);
+#elif defined(__vita__)
+/* Vita has it's own implementation and <dirent.h> isn't supported */
+#include <sys/types.h>
+#include <psp2/io/dirent.h>
+
+typedef SceUID DIR;
+
+struct dirent {
+	char *d_name;
+	DIR dir;
+	SceIoDirent *dirinfo;
+};
+
+DIR opendir(const char *path);
+struct dirent *readdir(DIR d);
+extern int closedir(DIR d);
 #else
 /* Use system-supplied opendir/readdir/closedir functions */
 # include <sys/types.h>
@@ -145,7 +161,11 @@ int closedir(DIR *d);
  * @param path string to open directory of
  * @return DIR pointer
  */
+#if defined(__vita__)
+static inline DIR ttd_opendir(const char *path)
+#else
 static inline DIR *ttd_opendir(const char *path)
+#endif
 {
 	return opendir(OTTD2FS(path));
 }

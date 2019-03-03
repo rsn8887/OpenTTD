@@ -21,6 +21,10 @@
 #include "os/windows/win32.h"
 #endif
 
+#ifdef __vita__
+#include <psp2/kernel/clib.h>
+#endif
+
 #include <time.h>
 
 #if defined(ENABLE_NETWORK)
@@ -143,6 +147,8 @@ static void debug_print(const char *dbg, const char *buf)
 		TCHAR system_buf[512];
 		convert_to_fs(buffer, system_buf, lengthof(system_buf), true);
 		_fputts(system_buf, stderr);
+#elif defined(__vita__)
+		sceClibPrintf(buf);
 #else
 		fputs(buffer, stderr);
 #endif

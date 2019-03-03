@@ -1223,7 +1223,10 @@ void DrawMouseCursor()
 	Blitter *blitter = BlitterFactory::GetCurrentBlitter();
 
 	/* Redraw mouse cursor but only when it's inside the window */
+#if defined(__vita__)
+	/* PS Vita doesn't support native cursor */
 	if (!_cursor.in_window) return;
+#endif
 
 	/* Don't draw the mouse cursor if it's already drawn */
 	if (_cursor.visible) {

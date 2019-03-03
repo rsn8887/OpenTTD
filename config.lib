@@ -560,9 +560,9 @@ check_params() {
 	# Check if all params have valid values
 
 	# OS only allows DETECT, UNIX, OSX, FREEBSD, DRAGONFLY, OPENBSD, NETBSD, MORPHOS, BEOS, HAIKU, SUNOS, CYGWIN, MINGW, OS2, and DOS
-	if [ -z "`echo $os | egrep '^(DETECT|UNIX|OSX|FREEBSD|DRAGONFLY|OPENBSD|NETBSD|HPUX|MORPHOS|BEOS|HAIKU|SUNOS|CYGWIN|MINGW|OS2|DOS)$'`" ]; then
+	if [ -z "`echo $os | egrep '^(DETECT|UNIX|OSX|FREEBSD|DRAGONFLY|OPENBSD|NETBSD|HPUX|MORPHOS|BEOS|HAIKU|SUNOS|CYGWIN|MINGW|OS2|DOS|PSVITA)$'`" ]; then
 		log 1 "configure: error: invalid option --os=$os"
-		log 1 " Available options are: --os=[DETECT|UNIX|OSX|FREEBSD|DRAGONFLY|OPENBSD|NETBSD|HPUX|MORPHOS|BEOS|HAIKU|SUNOS|CYGWIN|MINGW|OS2|DOS]"
+		log 1 " Available options are: --os=[DETECT|UNIX|OSX|FREEBSD|DRAGONFLY|OPENBSD|NETBSD|HPUX|MORPHOS|BEOS|HAIKU|SUNOS|CYGWIN|MINGW|OS2|DOS|PSVITA]"
 		exit 1
 	fi
 	# cpu_type can be either 32 or 64
@@ -1616,7 +1616,7 @@ make_cflags_and_ldflags() {
 		fi
 	fi
 
-	if [ "$os" != "CYGWIN" ] && [ "$os" != "HAIKU" ] && [ "$os" != "OPENBSD" ] && [ "$os" != "MINGW" ] && [ "$os" != "MORPHOS" ] && [ "$os" != "OSX" ] && [ "$os" != "DOS" ] && [ "$os" != "OS2" ]; then
+	if [ "$os" != "CYGWIN" ] && [ "$os" != "HAIKU" ] && [ "$os" != "OPENBSD" ] && [ "$os" != "MINGW" ] && [ "$os" != "MORPHOS" ] && [ "$os" != "OSX" ] && [ "$os" != "DOS" ] && [ "$os" != "OS2" ] && [ "$os" != "PSVITA" ]; then
 		LIBS="$LIBS -lpthread"
 	fi
 
@@ -1656,6 +1656,15 @@ make_cflags_and_ldflags() {
 		LIBS="$LIBS -lmidi -lbe"
 	fi
 
+	# PSVita flags & libs
+	if [ "$os" = "PSVITA" ]; then
+		CFLAGS="-Wl,-q $CFLAGS -mfpu=neon -mcpu=cortex-a9 -march=armv7-a -mfloat-abi=hard -Wl,-q"
+		CXXFLAGS="$CXXFLAGS -Wl,-q"
+		# TODO: This needs to be autoconfigured properly (mostly SDL)
+		LIBS="$LIBS -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -lSDL2 -lvita2d -lSceAppMgr_stub -lSceGxm_stub -lSceSysmodule_stub -lSceCtrl_stub -lSceDisplay_stub -lSceCommonDialog_stub -lSceAudio_stub -ldebugnet -lSceNetCtl_stub -lSceTouch_stub -lSceHid_stub -lScePower_stub"
+		LDFLAGS="$LDFLAGS -Wl,-z,nocopyreloc -Wl,-q"
+	fi
+	
 	# Most targets act like UNIX, just with some additions
 	if [ "$os" = "BEOS" ] || [ "$os" = "HAIKU" ] || [ "$os" = "OSX" ] || [ "$os" = "MORPHOS" ] || [ "$os" = "FREEBSD" ] || [ "$os" = "DRAGONFLY" ] || [ "$os" = "OPENBSD" ] || [ "$os" = "NETBSD" ] || [ "$os" = "HPUX" ] || [ "$os" = "SUNOS" ] || [ "$os" = "OS2" ]; then
 		CFLAGS="$CFLAGS -DUNIX"
@@ -2500,7 +2509,12 @@ detect_sdl() {
 		sleep 5
 	fi
 
-	detect_pkg_config "$with_sdl" "sdl" "sdl_config" "1.2"
+	if [ "$os" = "PSVITA" ]; then 
+		log 1 "Using SDL2 because OS is PSVITA"
+		detect_pkg_config "$with_sdl" "sdl2" "sdl_config" "1.2"
+	else
+		detect_pkg_config "$with_sdl" "sdl" "sdl_config" "1.2"
+	fi
 }
 
 detect_osx_sdk() {
@@ -2693,6 +2707,14 @@ detect_library() {
 			eval "res=\$$2"
 			if [ -z "$res" ]; then
 				log 2 "  trying $includeDir/$4$5... no"
+			fi
+		fi
+
+		if [ -z "$res" ] && [ "$os" = "PSVITA" ]; then
+			eval "$2=`ls -1 $VITASDK/arm-vita-eabi/include/$4*.h 2>/dev/null | egrep \"\/$5\$\"`"
+			eval "res=\$$2"
+			if [ -z "$res" ]; then
+				log 2 "  trying $VITASDK/arm-vita-eabi/include/$4$5... no"
 			fi
 		fi
 

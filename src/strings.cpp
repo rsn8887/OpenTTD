@@ -1921,13 +1921,21 @@ static bool GetLanguageFileHeader(const char *file, LanguagePackHeader *hdr)
  */
 static void GetLanguageList(const char *path)
 {
+#if defined(__vita__)
+	DIR dir = ttd_opendir(path);
+#else
 	DIR *dir = ttd_opendir(path);
+#endif
 	if (dir != NULL) {
 		struct dirent *dirent;
 		while ((dirent = readdir(dir)) != NULL) {
 			const char *d_name    = FS2OTTD(dirent->d_name);
 			const char *extension = strrchr(d_name, '.');
-
+			
+#if defined(__vita__)
+			free(dirent->dirinfo);
+			free(dirent);
+#endif
 			/* Not a language file */
 			if (extension == NULL || strcmp(extension, ".lng") != 0) continue;
 

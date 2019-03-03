@@ -19,6 +19,10 @@
 #include <../squirrel/sqpcheader.h>
 #include <../squirrel/sqvm.h>
 
+#if defined(__vita__)
+#include <alloca.h>
+#endif
+
 #include "../safeguards.h"
 
 void Squirrel::CompileError(HSQUIRRELVM vm, const SQChar *desc, const SQChar *source, SQInteger line, SQInteger column)

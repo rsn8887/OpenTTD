@@ -37,7 +37,13 @@
 #	endif
 #elif !defined(TESTING)
 #	include <sys/param.h>
-#	if __BYTE_ORDER == __LITTLE_ENDIAN
+#	if defined(__vita__)
+#		if BYTE_ORDER == LITTLE_ENDIAN
+#			define TTD_ENDIAN TTD_LITTLE_ENDIAN
+#		else
+# 			define TTD_ENDIAN TTD_BIG_ENDIAN
+#		endif
+#	elif __BYTE_ORDER == __LITTLE_ENDIAN
 #		define TTD_ENDIAN TTD_LITTLE_ENDIAN
 #	else
 #		define TTD_ENDIAN TTD_BIG_ENDIAN

@@ -9,6 +9,10 @@
 
 /** @file stringfilter.cpp Searching and filtering using a stringterm. */
 
+#ifdef __vita__
+#include <string.h>
+#endif
+
 #include "stdafx.h"
 #include "string_func.h"
 #include "strings_func.h"
@@ -113,7 +117,11 @@ void StringFilter::AddLine(const char *str)
 	const WordState *end = this->word_index.End();
 	for (WordState *it = this->word_index.Begin(); it != end; ++it) {
 		if (!it->match) {
+#if defined(__vita__)
+			if (strstr(str, it->start)) {
+#else
 			if ((match_case ? strstr(str, it->start) : strcasestr(str, it->start)) != NULL) {
+#endif
 				it->match = true;
 				this->word_matches++;
 			}
