@@ -70,9 +70,11 @@ openttd_switch.zip can be found in __cmake/__
 
 1.01
 
-- update data and sound files to latest freeware versions from www.openttd.org
-- decrease analog joystick deadzone
+- update graphics and sound files to latest freeware versions from www.openttd.org
+- reduce analog joystick deadzone for better mouse pointer control
 - improve smoothness of mouse pointer motion
+- enable cursor key map scrolling on USB keyboard
+- enable mouse wheel zoom on USB mouse
 
 1.00
 
