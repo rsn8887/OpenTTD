@@ -1,11 +1,13 @@
-# OpenTTD port for Switch v1.0 (Work-in-Progress)
+# OpenTTD port for Switch v1.0
 
-This is my Switch port of OpenTTD, a re-implementation of Transport Tycoon Deluxe. It is playable, but crashes on save dialog currently.
+This is my Switch port of OpenTTD, a re-implementation of Transport Tycoon Deluxe.
 
-Port by @rsn8887, based on the Vita port by @angguss. I made some control enhancements and I also enabled sound (pull request to @angguss made).
+Port by @rsn8887, based on the Vita port by @angguss. I made some control enhancements and I also enabled sound on the Vita port, too (pull request to @angguss made).
 
 ![](https://i.postimg.cc/6QkN6fLY/openttd-1.jpg)
 ![](https://i.postimg.cc/xCLVXN6Y/openttd-2.jpg)
+![](https://i.postimg.cc/xj5zkCZv/openttd-3.jpg)
+![](https://i.postimg.cc/MTvpv6fD/2019030504002300-17-F7-D349-D6-A1508-C316-B144-FC19-A67-A7.jpg)
 
 # Thanks
 
@@ -46,6 +48,7 @@ If the above files are present, a new option will appear when you go to game set
 
 # Current Limitations
 
+ - No music (requires midi)
  - No network support
 
 # Building for Switch
@@ -76,10 +79,10 @@ openttd.vpk can be found in __cmake/__
 
 # Changelog
 
-(1.0 WIP) Switch crashes on load/save dialog at the moment
+1.0
 
 - initial Switch release based on latest nightly
-- enabled sound fx (requires SAMPLE.CAT from original game, and enable `original dos` sound in settings)
+- enabled sound fx (requires SAMPLE.CAT from original game, and enabling `original dos` sound package in game settings)
 - improved touch controls
 - speedup on Vita via native texture rendering
 - improved analog stick mouse controls (use right stick to pan map and left stick for pointer)
