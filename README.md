@@ -13,7 +13,7 @@ Port by @rsn8887, based on the Vita port by @angguss. I made some control enhanc
 
 Thanks to the many developers who worked on this game.
 
-Thanks to @angguss for his excellent Vita port, on which this Switch port is based on.
+Thanks to @angguss for his excellent Vita port, on which this Switch port is based.
 
 Thanks to my supporters on Patreon: Andyways, CountDuckula, Greg Gibson, Jesse Harlin, Özgür Karter, Matthew Machnee, and RadicalR.
 
