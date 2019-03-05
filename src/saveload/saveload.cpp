@@ -161,11 +161,9 @@ struct MemoryDumper {
 
 		while (t > 0) {
 			size_t to_write = min(MEMORY_CHUNK_SIZE, t);
-
 			writer->Write(this->blocks[i++], to_write);
 			t -= to_write;
 		}
-
 		writer->Finish();
 	}
 
@@ -2412,7 +2410,6 @@ static void SaveFileDone()
 {
 	if (_game_mode != GM_MENU) _fast_forward = _sl.ff_state;
 	SetMouseCursorBusy(false);
-
 	InvalidateWindowData(WC_STATUS_BAR, 0, SBI_SAVELOAD_FINISH);
 	_sl.saveinprogress = false;
 }
@@ -2525,14 +2522,20 @@ static SaveOrLoadResult DoSave(SaveFilter *writer, bool threaded)
 	SlSaveChunks();
 
 	SaveFileStart();
+	// File writes inside a pthread seem to crash on flush on the Vita,
+	// no clue why but this stops it crashing not lzma-specific though.
+	// hacky fix but it works for now
+#if !defined(__vita__) && !defined(__SWITCH__)
 	if (!threaded || !ThreadObject::New(&SaveFileToDiskThread, NULL, &_save_thread, "ottd:savegame")) {
 		if (threaded) DEBUG(sl, 1, "Cannot create savegame thread, reverting to single-threaded mode...");
-
+#endif
 		SaveOrLoadResult result = SaveFileToDisk(false);
 		SaveFileDone();
 
 		return result;
+#if !defined(__vita__) && !defined(__SWITCH__)
 	}
+#endif
 
 	return SL_OK;
 }

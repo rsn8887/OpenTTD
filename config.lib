@@ -559,10 +559,10 @@ check_params() {
 
 	# Check if all params have valid values
 
-	# OS only allows DETECT, UNIX, OSX, FREEBSD, DRAGONFLY, OPENBSD, NETBSD, MORPHOS, BEOS, HAIKU, SUNOS, CYGWIN, MINGW, OS2, and DOS
-	if [ -z "`echo $os | egrep '^(DETECT|UNIX|OSX|FREEBSD|DRAGONFLY|OPENBSD|NETBSD|HPUX|MORPHOS|BEOS|HAIKU|SUNOS|CYGWIN|MINGW|OS2|DOS)$'`" ]; then
+	# OS only allows DETECT, UNIX, OSX, FREEBSD, DRAGONFLY, OPENBSD, NETBSD, MORPHOS, BEOS, HAIKU, SUNOS, CYGWIN, MINGW, OS2, DOS, WINCE, PSP, PSVITA and SWITCH
+	if [ -z "`echo $os | egrep '^(DETECT|UNIX|OSX|FREEBSD|DRAGONFLY|OPENBSD|NETBSD|HPUX|MORPHOS|BEOS|HAIKU|SUNOS|CYGWIN|MINGW|OS2|DOS|WINCE|PSP|PSVITA|SWITCH)$'`" ]; then
 		log 1 "configure: error: invalid option --os=$os"
-		log 1 " Available options are: --os=[DETECT|UNIX|OSX|FREEBSD|DRAGONFLY|OPENBSD|NETBSD|HPUX|MORPHOS|BEOS|HAIKU|SUNOS|CYGWIN|MINGW|OS2|DOS]"
+		log 1 " Available options are: --os=[DETECT|UNIX|OSX|FREEBSD|DRAGONFLY|OPENBSD|NETBSD|HPUX|MORPHOS|BEOS|HAIKU|SUNOS|CYGWIN|MINGW|OS2|DOS|WINCE|PSP|PSVITA|SWITCH]"
 		exit 1
 	fi
 	# cpu_type can be either 32 or 64
@@ -1247,8 +1247,8 @@ make_compiler_cflags() {
 		# Enable some things only for certain ICC versions
 		cc_version=`$1 -dumpversion | cut -c 1-4 | sed s@\\\.@@g`
 
-		flags="$flags -rdynamic"
-		ldflags="$ldflags -rdynamic"
+#		flags="$flags -rdynamic"
+#		ldflags="$ldflags -rdynamic"
 
 		if [ -z "$first_time_icc_check" ]; then
 			first_time_icc_check=no
@@ -1380,7 +1380,7 @@ make_compiler_cflags() {
 		fi
 
 		# rdynamic is used to get useful stack traces from crash reports.
-		ldflags="$ldflags -rdynamic"
+#		ldflags="$ldflags -rdynamic"
 
 	# Assume gcc, since it just uses argv[0] in its --version output
 	else
@@ -1476,12 +1476,12 @@ make_compiler_cflags() {
 			fi
 		fi
 
-		has_rdynamic=`$1 -dumpspecs | grep rdynamic`
-		if [ -n "$has_rdynamic" ]; then
-			# rdynamic is used to get useful stack traces from crash reports.
-			flags="$flags -rdynamic"
-			ldflags="$ldflags -rdynamic"
-		fi
+#		has_rdynamic=`$1 -dumpspecs | grep rdynamic`
+#		if [ -n "$has_rdynamic" ]; then
+#			# rdynamic is used to get useful stack traces from crash reports.
+#			flags="$flags -rdynamic"
+#			ldflags="$ldflags -rdynamic"
+#		fi
 	fi
 
 	eval "$2=\"$flags\""
@@ -1616,12 +1616,29 @@ make_cflags_and_ldflags() {
 		fi
 	fi
 
-	if [ "$os" != "CYGWIN" ] && [ "$os" != "HAIKU" ] && [ "$os" != "OPENBSD" ] && [ "$os" != "MINGW" ] && [ "$os" != "MORPHOS" ] && [ "$os" != "OSX" ] && [ "$os" != "DOS" ] && [ "$os" != "OS2" ]; then
+	if [ "$os" != "CYGWIN" ] && [ "$os" != "HAIKU" ] && [ "$os" != "OPENBSD" ] && [ "$os" != "MINGW" ] && [ "$os" != "MORPHOS" ] && [ "$os" != "OSX" ] && [ "$os" != "DOS" ] && [ "$os" != "WINCE" ] && [ "$os" != "PSP" ] && [ "$os" != "PSVITA" ] && [ "$os" != "SWITCH" ] && [ "$os" != "OS2" ]; then
 		LIBS="$LIBS -lpthread"
 	fi
 
 	if [ "$os" != "CYGWIN" ] && [ "$os" != "HAIKU" ] && [ "$os" != "MINGW" ] && [ "$os" != "DOS" ]; then
 		LIBS="$LIBS -lc"
+	fi
+
+	if [ "$os" = "PSVITA" ]; then
+		CFLAGS="-Wl,-q $CFLAGS -mfpu=neon -mcpu=cortex-a9 -march=armv7-a -mfloat-abi=hard -Wl,-q"
+		CXXFLAGS="$CXXFLAGS -Wl,-q"
+		# TODO: This needs to be autoconfigured properly (mostly SDL)
+		LIBS="$LIBS -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -lSDL2 -lvita2d -lSceAppMgr_stub -lSceGxm_stub -lSceSysmodule_stub -lSceCtrl_stub -lSceDisplay_stub -lSceCommonDialog_stub -lSceAudio_stub -ldebugnet -lSceNetCtl_stub -lSceTouch_stub -lSceHid_stub -lScePower_stub"
+		LDFLAGS="$LDFLAGS -Wl,-z,nocopyreloc -Wl,-q"
+	fi
+
+	if [ "$os" = "SWITCH" ]; then
+	#	-O0 is neccessary on Switch, otherwise the game crashes in the SAVE/LOAD dialog
+		CFLAGS="-Wl,-q -O0 $CFLAGS -O0 -I$DEVKITPRO/portlibs/switch/include/SDL2 -I$DEVKITPRO/portlibs/switch/include -I$DEVKITPRO/devkitA64/aarch64-none-elf/include/ -D__SWITCH__ -march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE -mlittle-endian -Wl,-q"
+		CXXFLAGS="-O0 $CXXFLAGS -O0 -Wl,-q"
+		# TODO: This needs to be autoconfigured properly (mostly SDL)
+		LIBS="$LIBS -specs=${DEVKITPRO}/libnx/switch.specs -L$DEVKITPRO/libnx/lib -Wl,--whole-archive -Wl,--no-whole-archive -lSDL2_mixer -lSDL2 -lEGL -lGLESv2 -lglapi -ldrm_nouveau -lpng -ljpeg -lfreetype -lm -lz -lnx -lstdc++"
+		LDFLAGS="$CFLAGS $LDFLAGS -Wl,-q"
 	fi
 
 	if [ "$os" = "MORPHOS" ]; then
@@ -1683,7 +1700,11 @@ make_cflags_and_ldflags() {
 		CFLAGS="$CFLAGS `$sdl_config --cflags | sed 's@-D_GNU_SOURCE[^ ]*@@'`"
 		if [ "$os" != "MINGW" ] && [ "$os" != "CYGWIN" ]; then
 			if [ "$enable_static" != "0" ]; then
-				LIBS="$LIBS `$sdl_config --static-libs`"
+				if [ "$os" = "SWITCH" ]; then
+					LIBS="$LIBS `$sdl_config --libs`"
+				else
+					LIBS="$LIBS `$sdl_config --static-libs`"
+				fi
 			else
 				LIBS="$LIBS `$sdl_config --libs`"
 			fi
@@ -2500,7 +2521,12 @@ detect_sdl() {
 		sleep 5
 	fi
 
-	detect_pkg_config "$with_sdl" "sdl" "sdl_config" "1.2"
+	if [ "$os" = "PSVITA" ] || [ "$os" = "SWITCH" ]; then
+		log 1 "Using SDL2 because OS is PSVITA"
+		detect_pkg_config "$with_sdl" "sdl2" "sdl_config" "1.2"
+	else
+		detect_pkg_config "$with_sdl" "sdl" "sdl_config" "1.2"
+	fi
 }
 
 detect_osx_sdk() {
@@ -2696,6 +2722,22 @@ detect_library() {
 			fi
 		fi
 
+		if [ -z "$res" ] && [ "$os" = "PSVITA" ]; then
+			eval "$2=`ls -1 $VITASDK/arm-vita-eabi/include/$4*.h 2>/dev/null | egrep \"\/$5\$\"`"
+			eval "res=\$$2"
+			if [ -z "$res" ]; then
+				log 2 "  trying $VITASDK/arm-vita-eabi/include/$4$5... no"
+			fi
+		fi
+
+		if [ -z "$res" ] && [ "$os" = "SWITCH" ]; then
+			eval "$2=`ls -1 $DEVKITPRO/portlibs/switch/include/$4*.h 2>/dev/null | egrep \"\/$5\$\"`"
+			eval "res=\$$2"
+			if [ -z "$res" ]; then
+				log 2 "  trying $DEVKITPRO/portlibs/switch/include/$4$5... no"
+			fi
+		fi
+
 		eval "res=\$$2"
 		if [ -n "$res" ] && ( [ -n "$force_static" ] || ( [ "$enable_static" != "0" ] && [ "$os" != "OSX" ] ) ); then
 			eval "res=\$$2"
@@ -2716,6 +2758,14 @@ detect_library() {
 			if [ -z "$res" ]; then
 				log 2 "  trying /usr/local/lib/$3... no"
 				eval "$2=`ls /mingw/lib/*.a 2>/dev/null | egrep \"\/$3\$\"`"
+			fi
+			if [ -z "$res" ] && [ "$os" = "PSVITA" ]; then
+				log 2 "  trying $VITASDK/arm-vita-eabi/lib/$3... no"
+				eval "$2=`ls $VITASDK/arm-vita-eabi/lib/*.a 2>/dev/null | egrep \"\/$3\$\"`"
+			fi
+			if [ -z "$res" ] && [ "$os" = "SWITCH" ]; then
+				log 2 "  trying $DEVKITPRO/portlibs/switch/lib/$3... no"
+				eval "$2=`ls $DEVKITPRO/portlibs/switch/lib/*.a 2>/dev/null | egrep \"\/$3\$\"`"
 			fi
 			eval "res=\$$2"
 			if [ -z "$res" ]; then

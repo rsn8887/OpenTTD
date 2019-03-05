@@ -1792,6 +1792,7 @@ DEF_CONSOLE_CMD(ConContent)
 		return true;
 	}
 
+#if !defined(__vita__) && !defined(__SWITCH__)
 	if (strcasecmp(argv[1], "state") == 0) {
 		IConsolePrintF(CC_WHITE, "id, type, state, name");
 		for (ConstContentIterator iter = _network_content_client.Begin(); iter != _network_content_client.End(); iter++) {
@@ -1800,6 +1801,7 @@ DEF_CONSOLE_CMD(ConContent)
 		}
 		return true;
 	}
+#endif
 
 	if (strcasecmp(argv[1], "download") == 0) {
 		uint files;

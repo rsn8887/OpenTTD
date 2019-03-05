@@ -100,6 +100,13 @@
 	#define strcasecmp stricmp
 #endif
 
+#if defined(__SWITCH__) || defined(__vita__)
+	#include <strings.h>
+	#include <unistd.h>
+	#include <malloc.h>
+	#include <alloca.h>
+#endif
+
 #if defined(SUNOS) || defined(HPUX)
 	#include <alloca.h>
 #endif
@@ -325,7 +332,12 @@
 #else
 	#define OTTD_PRINTF64 "%lld"
 	#define OTTD_PRINTFHEX64 "%llx"
+// Vita libs don't support %zu so use lu instead
+#if defined(__vita__)
+	#define PRINTF_SIZE "%u"
+#else
 	#define PRINTF_SIZE "%zu"
+#endif
 #endif
 
 typedef unsigned char byte;
