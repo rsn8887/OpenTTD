@@ -40,7 +40,7 @@ set(VITA_TITLEID  "ANGU00001")
 endif()
 
 if (SWITCH_BUILD)
-    set(SWITCH_VERSION "1.00")
+    set(SWITCH_VERSION "1.01")
 endif()
 
 #configure_file(../objs/debug/${SHORT_NAME} ./${SHORT_NAME} COPYONLY)
