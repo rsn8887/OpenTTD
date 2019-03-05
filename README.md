@@ -1,4 +1,4 @@
-# OpenTTD port for Switch v1.0
+# OpenTTD port for Switch v1.01
 
 This is my Switch port of OpenTTD, a re-implementation of Transport Tycoon Deluxe.
 
@@ -72,6 +72,7 @@ openttd_switch.zip can be found in __cmake/__
 
 - update data and sound files to latest freeware versions from www.openttd.org
 - decrease analog joystick deadzone
+- improve smoothness of mouse pointer motion
 
 1.00
 
