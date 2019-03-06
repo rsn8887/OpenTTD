@@ -148,5 +148,9 @@ bool MusicDriver_LibTimidity::IsSongPlaying()
 
 void MusicDriver_LibTimidity::SetVolume(byte vol)
 {
-	if (_midi.song != NULL) mid_song_set_volume(_midi.song, vol);
+	/* libtimidity's default volume is 70, but that is already too loud.
+	 * Set gain using OpenTTD's volume, as a number between 0
+	 * and 40. */
+	double gain = (40.0 * vol) / (128.0);
+	if (_midi.song != NULL) mid_song_set_volume(_midi.song, (int) gain);
 }
