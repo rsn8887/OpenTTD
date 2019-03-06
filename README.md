@@ -21,7 +21,7 @@ Thanks to my supporters on Patreon: Andyways, CountDuckula, Greg Gibson, Jesse H
 
 The public domain graphics and sound sets from www.openttd.org are included.
 
-If you want the choice to also use the original dos game graphics and sounds, copy over the files 
+If you want the choice to also use the original dos game graphics, sounds and music, copy over the files 
 ```
 SAMPLE.CAT 
 TRHCOM.GRF

@@ -44,6 +44,7 @@ static struct {
 	MidiState status;
 	uint32 song_length;
 	uint32 song_position;
+	int gain;
 } _midi; ///< Metadata about the midi we're playing.
 
 #if defined(__SWITCH__)
@@ -63,6 +64,7 @@ const char *MusicDriver_LibTimidity::Start(const char * const *param)
 {
 	_midi.status = MIDI_STOPPED;
 	_midi.song = NULL;
+	_midi.gain = 40;
 #if defined(__SWITCH__)
 	if (mid_init("/switch/openttd/timidity/timidity.cfg") < 0) {
 #else
@@ -122,6 +124,7 @@ void MusicDriver_LibTimidity::PlaySong(const MusicSongInfo &song)
 	}
 
 	mid_song_start(_midi.song);
+	mid_song_set_volume(_midi.song, _midi.gain);
 	_midi.status = MIDI_PLAYING;
 }
 
@@ -151,6 +154,6 @@ void MusicDriver_LibTimidity::SetVolume(byte vol)
 	/* libtimidity's default volume is 70, but that is already too loud.
 	 * Set gain using OpenTTD's volume, as a number between 0
 	 * and 40. */
-	double gain = (40.0 * vol) / (128.0);
-	if (_midi.song != NULL) mid_song_set_volume(_midi.song, (int) gain);
+	_midi.gain = (40.0 * vol) / (128.0);
+	if (_midi.song != NULL) mid_song_set_volume(_midi.song, _midi.gain);
 }
