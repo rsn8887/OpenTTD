@@ -764,9 +764,9 @@ int openttd_main(int argc, char *argv[])
 	// argv[0] is NULL on vita, will crash
 	DeterminePaths("ux0:/data/openttd/");
 	scePowerSetArmClockFrequency(444);
-    scePowerSetGpuClockFrequency(222);
-    scePowerSetBusClockFrequency(222);
-    scePowerSetGpuXbarClockFrequency(222);
+	scePowerSetGpuClockFrequency(222);
+	scePowerSetBusClockFrequency(222);
+	scePowerSetGpuXbarClockFrequency(222);
 #else
 	DeterminePaths(argv[0]);
 #endif
