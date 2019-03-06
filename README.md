@@ -19,6 +19,8 @@ Thanks to my supporters on Patreon: Andyways, CountDuckula, Greg Gibson, Jesse H
 
 # Installation
 
+Note: This game takes quite long to load (~15 seconds). But it is worth the wait!
+
 The public domain graphics and sound sets from www.openttd.org are included.
 
 If you want the choice to also use the original dos game graphics and sounds, copy over the files 
@@ -89,12 +91,12 @@ openttd_switch.zip can be found in __cmake/__
 
 1.01
 
-- enabled music
+- music is now working
 - improve smoothness of mouse pointer motion
 - reduce analog joystick deadzone for better mouse pointer control
 - update graphics and sound files to latest freeware versions from www.openttd.org
 - enable cursor key map scrolling on USB keyboard
-- enable mouse wheel zoom on USB mouse
+- enabled mouse wheel zoom
 
 1.00
 
