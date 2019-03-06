@@ -1141,6 +1141,7 @@ music/midifile.cpp
 					#if PSVITA
 					#else
 						#if SWITCH
+							music/libtimidity.cpp
 						#else
 							music/extmidi.cpp
 						#end
