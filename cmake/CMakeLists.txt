@@ -33,7 +33,7 @@ set(SHORT_NAME openttd)
 project(${SHORT_NAME})
 
 if (VITA_BUILD)
-include("${VITASDK}/share/vita.cmake" REQUIRED)
+include("$ENV{VITASDK}/share/vita.cmake" REQUIRED)
 
 set(VITA_APP_NAME "OpenTTD")
 set(VITA_TITLEID  "ANGU00001")
@@ -47,7 +47,10 @@ endif()
 configure_file(../objs/release/${SHORT_NAME} ./${SHORT_NAME} COPYONLY)
 
 if (VITA_BUILD)
-vita_create_self(${SHORT_NAME}.self ${SHORT_NAME})
+# Allow 300 MB heap with -d ATTRIBUTE2=12.
+set(VITA_MKSFOEX_FLAGS "${VITA_MKSFOEX_FLAGS} -d ATTRIBUTE2=12")
+
+vita_create_self(${SHORT_NAME}.self -d ATTRIBUTE2=12 ${SHORT_NAME})
 vita_create_vpk(${SHORT_NAME}.vpk ${VITA_TITLEID} ${SHORT_NAME}.self
   VERSION ${VITA_VERSION}
   NAME ${VITA_APP_NAME}

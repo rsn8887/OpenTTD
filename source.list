@@ -1139,6 +1139,7 @@ music/midifile.cpp
 				#if MORPHOS
 				#else
 					#if PSVITA
+						music/libtimidity.cpp
 					#else
 						#if SWITCH
 							music/libtimidity.cpp

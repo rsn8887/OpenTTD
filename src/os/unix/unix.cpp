@@ -279,7 +279,7 @@ void cocoaReleaseAutoreleasePool();
 
 #if defined(__vita__)
 // Set heap to 100mb (default is 32mb)
-int _newlib_heap_size_user = 100 * 1024 * 1024;
+int _newlib_heap_size_user = 300 * 1024 * 1024;
 #endif
 
 int CDECL main(int argc, char *argv[])

@@ -24,7 +24,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <timidity.h>
-#if defined(__SWITCH__)
+#if defined(__SWITCH__) || defined(__vita__)
 #include "../mixer.h"
 #endif
 
@@ -47,7 +47,7 @@ static struct {
 	int gain;
 } _midi; ///< Metadata about the midi we're playing.
 
-#if defined(__SWITCH__)
+#if defined(__SWITCH__) || defined(__vita__)
 static void RenderMusicStream(int16 *buffer, size_t samples)
 {
 	if (_midi.status != MIDI_PLAYING || !_midi.song) return;
@@ -67,6 +67,8 @@ const char *MusicDriver_LibTimidity::Start(const char * const *param)
 	_midi.gain = 40;
 #if defined(__SWITCH__)
 	if (mid_init("/switch/openttd/timidity/timidity.cfg") < 0) {
+#elif defined(__vita__)
+	if (mid_init("ux0:/data/openttd/timidity/timidity.cfg") < 0) {
 #else
 	if (mid_init(param == NULL ? NULL : const_cast<char *>(param[0])) < 0) {
 #endif
@@ -79,7 +81,7 @@ const char *MusicDriver_LibTimidity::Start(const char * const *param)
 	}
 	DEBUG(driver, 1, "successfully initialised timidity");
 
-#if defined(__SWITCH__)
+#if defined(__SWITCH__) || defined(__vita__)
 	uint32 samplerate = MxSetMusicSource(RenderMusicStream);
 	_midi.options.rate = samplerate;
 #else
@@ -94,7 +96,7 @@ const char *MusicDriver_LibTimidity::Start(const char * const *param)
 
 void MusicDriver_LibTimidity::Stop()
 {
-#if defined(__SWITCH__)
+#if defined(__SWITCH__) || defined(__vita__)
 	MxSetMusicSource(NULL);
 #endif
 	if (_midi.status == MIDI_PLAYING) this->StopSong();
