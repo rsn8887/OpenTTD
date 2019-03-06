@@ -312,7 +312,7 @@ static void HandleAnalogSticks(void)
 	_hires_dx += left_x; // sub-pixel precision to allow slow mouse motion at speeds < 1 pixel/frame
 	_hires_dy += left_y;
 	
-	const int slowdown = 4096;
+	const int slowdown = 6144;
 	
 	if (_hires_dx != 0 || _hires_dy != 0) {
 		int xrel = _hires_dx / slowdown;
