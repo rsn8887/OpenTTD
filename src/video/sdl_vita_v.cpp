@@ -755,14 +755,22 @@ int VideoDriver_SDL::PollEvent()
 			}
 			// Just pretend we're wheeling the mouse wheel
 			// than implementing this properly
+#if defined(__SWITCH__)
+			else if ((ev.jbutton.button == VITA_JOY_SQUARE) || (ev.jbutton.button == SWITCH_JOY_ZL))
+#else
 			else if (ev.jbutton.button == VITA_JOY_SQUARE)
+#endif
 			{
 				// Zoom out
 				_cursor.wheel += 1;
 				HandleMouseEvents();
 
 			}
+#if defined(__SWITCH__)
+			else if ((ev.jbutton.button == VITA_JOY_TRIANGLE) || (ev.jbutton.button == SWITCH_JOY_ZR))
+#else
 			else if (ev.jbutton.button == VITA_JOY_TRIANGLE)
+#endif
 			{
 				// Zoom in
 				_cursor.wheel -= 1;
