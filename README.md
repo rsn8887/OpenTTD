@@ -21,7 +21,7 @@ Thanks to my supporters on Patreon: Andyways, CountDuckula, Greg Gibson, Jesse H
 
 The public domain graphics and sound sets from www.openttd.org are included.
 
-If you want the choice to also use the original dos game graphics, sounds and music, copy over the files 
+If you want the choice to also use the original dos game graphics and sounds, copy over the files 
 ```
 SAMPLE.CAT 
 TRHCOM.GRF
@@ -31,11 +31,18 @@ TRG1.GRF
 TRGC.GRF
 TRGH.GRF
 TRGI.GRF
-TRGT.GRF  
+TRGT.GRF
 ```
-from the original TTD game to `/switch/openttd/baseset/`
+from an original TTD game to `/switch/openttd/baseset/`.
 
-You then get the choice to select `original dos` graphics and sounds when you go to game settings from the title screen.
+To install the original music, copy over all files 
+```
+gm/gm_ttxx.gm (xx are numbers)
+```
+
+from the folder `gm` from the original windows version of the game to `/switch/openttd/gm/`.  
+
+You then get the choice to select `original dos` graphics, sounds, and music when you go to the game settings dialog.
 
 # Controls
 
