@@ -120,7 +120,6 @@ static SDL_Renderer *_sdl_renderer;
 // The renderer dest format for the conversion
 static SDL_PixelFormat *_dst_format;
 static SDL_Joystick *_sdl_joystick;
-static bool _all_modes;
 
 /** Whether the drawing is/may be done in a separate thread. */
 static bool _draw_threaded;
@@ -269,30 +268,6 @@ static void GetVideoModes()
 {
 	memcpy(_resolutions, _default_resolutions, sizeof(_default_resolutions));
 	_num_resolutions = 1;
-}
-
-static void GetAvailableVideoMode(uint *w, uint *h)
-{
-	/* All modes available? */
-	if (_all_modes || _num_resolutions == 0) return;
-
-	/* Is the wanted mode among the available modes? */
-	for (int i = 0; i != _num_resolutions; i++) {
-		if (*w == _resolutions[i].width && *h == _resolutions[i].height) return;
-	}
-
-	/* Use the closest possible resolution */
-	int best = 0;
-	uint delta = Delta(_resolutions[0].width, *w) * Delta(_resolutions[0].height, *h);
-	for (int i = 1; i != _num_resolutions; ++i) {
-		uint newdelta = Delta(_resolutions[i].width, *w) * Delta(_resolutions[i].height, *h);
-		if (newdelta < delta) {
-			best = i;
-			delta = newdelta;
-		}
-	}
-	*w = _resolutions[best].width;
-	*h = _resolutions[best].height;
 }
 
 static void HandleAnalogSticks(void)

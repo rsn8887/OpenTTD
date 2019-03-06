@@ -598,7 +598,11 @@ int openttd_main(int argc, char *argv[])
 	char *graphics_set = NULL;
 	char *sounds_set = NULL;
 	char *music_set = NULL;
+#if defined(__vita__)
+	Dimension resolution = {960, 544};
+#elif
 	Dimension resolution = {0, 0};
+#endif
 	/* AfterNewGRFScan sets save_config to true after scanning completed. */
 	bool save_config = false;
 	AfterNewGRFScan *scanner = new AfterNewGRFScan(&save_config);
