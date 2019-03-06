@@ -75,6 +75,7 @@ openttd_switch.zip can be found in __cmake/__
 - improve smoothness of mouse pointer motion
 - enable cursor key map scrolling on USB keyboard
 - enable mouse wheel zoom on USB mouse
+- enabled music
 
 1.00
 
