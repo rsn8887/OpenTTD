@@ -19,11 +19,15 @@ Thanks to my supporters on Patreon: Andyways, CountDuckula, Greg Gibson, Jesse H
 
 # Installation
 
-Note: This game takes quite long to load (~15 seconds). But it is worth the wait!
+- Download (see `assets` below), and unzip openttd_switch.zip and copy the contents over to the `/switch/` folder on your sd card, so that you have a folder `/switch/openttd` with many folders and files inside.
 
-The public domain graphics and sound sets from www.openttd.org are included.
+- Use you favorite homebrew launcher to start the game. It comes with everything you need to start playing right away.
 
-If you want the choice to also use the original dos game graphics and sounds, copy over the files 
+- Note: This game takes quite long to load (~15 seconds). But it is worth the wait!
+
+- The public domain graphics and sound sets from www.openttd.org are included.
+
+- If you want the choice to also use the original dos game graphics and sounds, copy over the files 
 ```
 SAMPLE.CAT 
 TRHCOM.GRF
@@ -37,7 +41,7 @@ TRGT.GRF
 ```
 from an original TTD game to `/switch/openttd/baseset/`.
 
-To install the original music, copy over all files 
+- To install the original music, copy over all files 
 ```
 gm/gm_ttxx.gm (xx are numbers)
 ```
@@ -101,4 +105,3 @@ openttd_switch.zip can be found in __cmake/__
 1.00
 
 - initial Switch release based on latest nightly
-
