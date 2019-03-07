@@ -2729,6 +2729,10 @@ detect_library() {
 				log 2 "  trying /lib/$3... no"
 				eval "$2=`ls /usr/lib/*.a 2>/dev/null | egrep \"\/$3\$\"`"
 			fi
+			if [ -z "$res" ] && [ "$os" = "PSVITA" ]; then
+				log 2 "  trying $VITASDK/arm-vita-eabi/lib/$3... no"
+				eval "$2=`ls $VITASDK/arm-vita-eabi/lib/*.a 2>/dev/null | egrep \"\/$3\$\"`"
+			fi
 			eval "res=\$$2"
 			if [ -z "$res" ]; then
 				log 2 "  trying /usr/lib/$3... no"
