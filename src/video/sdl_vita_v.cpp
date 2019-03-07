@@ -754,11 +754,14 @@ int VideoDriver_SDL::PollEvent()
 			{
 				// Zoom out
 				_cursor.wheel += 1;
+				HandleMouseEvents();
 			}
 			else if (ev.jbutton.button == VITA_JOY_TRIANGLE)
 			{
 				// Zoom in
 				_cursor.wheel -= 1;
+				HandleMouseEvents();
+
 			}
 			// Map d-pad to arrow keys in order to pan screen
 			else
@@ -893,6 +896,8 @@ void VideoDriver_SDL::MainLoop()
 		uint32 prev_cur_ticks = cur_ticks; // to check for wrapping
 		InteractiveRandom(); // randomness
 
+		HandleAnalogSticks();
+		FinishSimulatedMouseClicks();
 		while (PollEvent() == -1) {}
 		if (_exit_game) break;
 
@@ -929,10 +934,6 @@ void VideoDriver_SDL::MainLoop()
 
 			_ctrl_pressed  = !!(mod & KMOD_CTRL);
 			_shift_pressed = !!(mod & KMOD_SHIFT);
-
-			HandleAnalogSticks();
-			FinishSimulatedMouseClicks();
-			HandleMouseEvents();
 
 			if (old_ctrl_pressed != _ctrl_pressed) HandleCtrlChanged();
 
