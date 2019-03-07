@@ -1126,6 +1126,7 @@ music/midifile.cpp
 		#if MORPHOS
 		#else
 			#if PSVITA
+				music/libtimidity.cpp
 			#else
 				music/extmidi.cpp
 			#end

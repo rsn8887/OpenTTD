@@ -24,6 +24,9 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <timidity.h>
+#if defined(__vita__)
+#include "../mixer.h"
+#endif
 
 #include "../safeguards.h"
 
@@ -41,7 +44,18 @@ static struct {
 	MidiState status;
 	uint32 song_length;
 	uint32 song_position;
+	int gain;
 } _midi; ///< Metadata about the midi we're playing.
+
+#if defined(__vita__)
+static void RenderMusicStream(int16 *buffer, size_t samples)
+{
+	if (_midi.status != MIDI_PLAYING || !_midi.song) return;
+	size_t size = mid_song_read_wave(_midi.song, (int8*)buffer, samples*4);
+}
+
+#endif
+
 
 /** Factory for the libtimidity driver. */
 static FMusicDriver_LibTimidity iFMusicDriver_LibTimidity;
@@ -50,8 +64,12 @@ const char *MusicDriver_LibTimidity::Start(const char * const *param)
 {
 	_midi.status = MIDI_STOPPED;
 	_midi.song = NULL;
-
+	_midi.gain = 40;
+#if defined(__vita__)
+	if (mid_init("ux0:/data/openttd/timidity/timidity.cfg") < 0) {
+#else
 	if (mid_init(param == NULL ? NULL : const_cast<char *>(param[0])) < 0) {
+#endif
 		/* If init fails, it can be because no configuration was found.
 		 *  If it was not forced via param, try to load it without a
 		 *  configuration. Who knows that works. */
@@ -61,7 +79,12 @@ const char *MusicDriver_LibTimidity::Start(const char * const *param)
 	}
 	DEBUG(driver, 1, "successfully initialised timidity");
 
+#if defined(__vita__)
+	uint32 samplerate = MxSetMusicSource(RenderMusicStream);
+	_midi.options.rate = samplerate;
+#else
 	_midi.options.rate = 44100;
+#endif
 	_midi.options.format = MID_AUDIO_S16LSB;
 	_midi.options.channels = 2;
 	_midi.options.buffer_size = _midi.options.rate;
@@ -71,6 +94,9 @@ const char *MusicDriver_LibTimidity::Start(const char * const *param)
 
 void MusicDriver_LibTimidity::Stop()
 {
+#if defined(__vita__)
+	MxSetMusicSource(NULL);
+#endif
 	if (_midi.status == MIDI_PLAYING) this->StopSong();
 	mid_exit();
 }
@@ -98,6 +124,7 @@ void MusicDriver_LibTimidity::PlaySong(const MusicSongInfo &song)
 	}
 
 	mid_song_start(_midi.song);
+	mid_song_set_volume(_midi.song, _midi.gain);
 	_midi.status = MIDI_PLAYING;
 }
 
@@ -124,5 +151,9 @@ bool MusicDriver_LibTimidity::IsSongPlaying()
 
 void MusicDriver_LibTimidity::SetVolume(byte vol)
 {
-	if (_midi.song != NULL) mid_song_set_volume(_midi.song, vol);
+	/* libtimidity's default volume is 70, but that is much too loud.
+	 * Set gain using OpenTTD's volume, as a number between 0
+	 * and 20. */
+	_midi.gain = (20.0 * vol) / (128.0);
+	if (_midi.song != NULL) mid_song_set_volume(_midi.song, _midi.gain);
 }
