@@ -298,7 +298,7 @@ static void HandleAnalogSticks(void)
 {
 	int left_x = SDL_JoystickGetAxis(_sdl_joystick, 0);
 	int left_y = SDL_JoystickGetAxis(_sdl_joystick, 1);
-	RescaleAnalog(&left_x, &left_y, 3000);
+	RescaleAnalog(&left_x, &left_y, 2000);
 	_hires_dx += left_x; // sub-pixel precision to allow slow mouse motion at speeds < 1 pixel/frame
 	_hires_dy += left_y;
 
