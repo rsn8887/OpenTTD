@@ -93,6 +93,11 @@ openttd_switch.zip can be found in __cmake/__
 
 # Changelog
 
+1.02 (wip)
+
+- compile with lzma and lzo2 compression libraries to allow loading old compressed savegames/scenarios
+- on Switch, map ZL/ZR to zoom in/out
+
 1.01
 
 - music is now working

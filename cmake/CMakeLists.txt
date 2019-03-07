@@ -40,7 +40,7 @@ set(VITA_TITLEID  "ANGU00001")
 endif()
 
 if (SWITCH_BUILD)
-    set(SWITCH_VERSION "1.01")
+    set(SWITCH_VERSION "1.02")
 endif()
 
 #configure_file(../objs/debug/${SHORT_NAME} ./${SHORT_NAME} COPYONLY)
@@ -49,8 +49,7 @@ configure_file(../objs/release/${SHORT_NAME} ./${SHORT_NAME} COPYONLY)
 if (VITA_BUILD)
 # Allow 300 MB heap with -d ATTRIBUTE2=12.
 set(VITA_MKSFOEX_FLAGS "${VITA_MKSFOEX_FLAGS} -d ATTRIBUTE2=12")
-
-vita_create_self(${SHORT_NAME}.self -d ATTRIBUTE2=12 ${SHORT_NAME})
+vita_create_self(${SHORT_NAME}.self ${SHORT_NAME})
 vita_create_vpk(${SHORT_NAME}.vpk ${VITA_TITLEID} ${SHORT_NAME}.self
   VERSION ${VITA_VERSION}
   NAME ${VITA_APP_NAME}
