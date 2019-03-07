@@ -2525,16 +2525,22 @@ static SaveOrLoadResult DoSave(SaveFilter *writer, bool threaded)
 	SlSaveChunks();
 
 	SaveFileStart();
+	// File writes inside a pthread seem to crash on flush on the Vita,
+	// no clue why but this stops it crashing not lzma-specific though.
+	// hacky fix but it works for now
+#if !defined(__vita__)
 	if (!threaded || !ThreadObject::New(&SaveFileToDiskThread, NULL, &_save_thread, "ottd:savegame")) {
 		if (threaded) DEBUG(sl, 1, "Cannot create savegame thread, reverting to single-threaded mode...");
-
+#endif
 		SaveOrLoadResult result = SaveFileToDisk(false);
 		SaveFileDone();
 
 		return result;
+#if !defined(__vita__)
 	}
 
 	return SL_OK;
+#endif
 }
 
 /**
