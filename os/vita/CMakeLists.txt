@@ -21,7 +21,7 @@ configure_file(../../objs/release/${SHORT_NAME} ./${SHORT_NAME} COPYONLY)
 # Allow 300 MB heap with -d ATTRIBUTE2=12.
 set(VITA_MKSFOEX_FLAGS "${VITA_MKSFOEX_FLAGS} -d ATTRIBUTE2=12")
 vita_create_self(${SHORT_NAME}.self ${SHORT_NAME})
-vita_create_vpk(${SHORT_NAME}.vpk ${VITA_TITLEID} ./${SHORT_NAME}.self
+vita_create_vpk(${SHORT_NAME}.vpk ${VITA_TITLEID} ${SHORT_NAME}.self
   VERSION ${VITA_VERSION}
   NAME ${VITA_APP_NAME}
   FILE sce_sys/icon0.png sce_sys/icon0.png
