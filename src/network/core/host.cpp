@@ -173,7 +173,11 @@ static void NetworkFindBroadcastIPsInternal(NetworkAddressList *broadcast) // !G
 
 			strecpy(r.ifr_name, req->ifr_name, lastof(r.ifr_name));
 			if (ioctl(sock, SIOCGIFFLAGS, &r) != -1 &&
+#if defined(__SWITCH__)
+					(r.ifr_flags[0] & IFF_BROADCAST) &&
+#else
 					(r.ifr_flags & IFF_BROADCAST) &&
+#endif
 					ioctl(sock, SIOCGIFBRDADDR, &r) != -1) {
 				NetworkAddress addr(&r.ifr_broadaddr, sizeof(sockaddr));
 				if (!broadcast->Contains(addr)) *broadcast->Append() = addr;

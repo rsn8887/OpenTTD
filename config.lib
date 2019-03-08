@@ -1634,8 +1634,8 @@ make_cflags_and_ldflags() {
 
 	if [ "$os" = "SWITCH" ]; then
 	#	-O0 is neccessary on Switch, otherwise the game crashes in the SAVE/LOAD dialog
-		CFLAGS="-Wl,-q -O0 $CFLAGS -O0 -I$DEVKITPRO/portlibs/switch/include/SDL2 -I$DEVKITPRO/portlibs/switch/include -I$DEVKITPRO/devkitA64/aarch64-none-elf/include/ -D__SWITCH__ -march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE -mlittle-endian -Wl,-q"
-		CXXFLAGS="-O0 $CXXFLAGS -O0 -Wl,-q"
+		CFLAGS="-Wl,-q -O0 --std=gnu++17 $CFLAGS -O0 -std=gnu++17 -I$DEVKITPRO/portlibs/switch/include/SDL2 -I$DEVKITPRO/portlibs/switch/include -I$DEVKITPRO/devkitA64/aarch64-none-elf/include/ -D__SWITCH__ -march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE -mlittle-endian -Wl,-q"
+		CXXFLAGS="-O0 --std=gnu++17 $CXXFLAGS -O0 --std=gnu++17 -Wl,-q"
 		# TODO: This needs to be autoconfigured properly (mostly SDL)
 		LIBS="$LIBS -specs=${DEVKITPRO}/libnx/switch.specs -L$DEVKITPRO/libnx/lib -Wl,--whole-archive -Wl,--no-whole-archive -lSDL2_mixer -lSDL2 -lEGL -lGLESv2 -lglapi -ldrm_nouveau -lpng -ljpeg -lfreetype -lm -lz -lnx -lstdc++"
 		LDFLAGS="$CFLAGS $LDFLAGS -Wl,-q"

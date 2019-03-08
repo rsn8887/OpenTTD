@@ -610,8 +610,12 @@ int openttd_main(int argc, char *argv[])
 	bool dedicated = false;
 	char *debuglog_conn = NULL;
 
+#if defined(__SWITCH__)
+	bool _dedicated_forks = false;
+#else
 	extern bool _dedicated_forks;
 	_dedicated_forks = false;
+#endif
 #endif /* ENABLE_NETWORK */
 
 	_game_mode = GM_MENU;
