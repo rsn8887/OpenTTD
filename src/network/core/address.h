@@ -77,7 +77,11 @@ public:
 	 * @param port the port
 	 * @param family the address family
 	 */
+#if defined(__SWITCH__)
+	NetworkAddress(const char *hostname = "", uint16 port = 0, int family = AF_INET) :
+#else
 	NetworkAddress(const char *hostname = "", uint16 port = 0, int family = AF_UNSPEC) :
+#endif
 		address_length(0),
 		resolved(false)
 	{

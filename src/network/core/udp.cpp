@@ -35,7 +35,9 @@ NetworkUDPSocketHandler::NetworkUDPSocketHandler(NetworkAddressList *bind)
 		 * resolving it we need to add an address for each of
 		 * the address families we support. */
 		*this->bind.Append() = NetworkAddress(NULL, 0, AF_INET);
+#if !defined(__SWITCH__)
 		*this->bind.Append() = NetworkAddress(NULL, 0, AF_INET6);
+#endif
 	}
 }
 

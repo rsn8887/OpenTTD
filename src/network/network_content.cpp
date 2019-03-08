@@ -751,7 +751,11 @@ void ClientNetworkContentSocketHandler::Connect()
 
 	if (this->sock != INVALID_SOCKET || this->isConnecting) return;
 	this->isConnecting = true;
+#if defined(__SWITCH__)
+	new NetworkContentConnecter(NetworkAddress(NETWORK_CONTENT_SERVER_HOST, NETWORK_CONTENT_SERVER_PORT, AF_INET));
+#else
 	new NetworkContentConnecter(NetworkAddress(NETWORK_CONTENT_SERVER_HOST, NETWORK_CONTENT_SERVER_PORT, AF_UNSPEC));
+#endif
 }
 
 /**

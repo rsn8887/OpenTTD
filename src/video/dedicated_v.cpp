@@ -11,7 +11,7 @@
 
 #include "../stdafx.h"
 
-#ifdef ENABLE_NETWORK
+#if defined(ENABLE_NETWORK) && !defined(__SWITCH__)
 
 #include "../gfx_func.h"
 #include "../network/network.h"

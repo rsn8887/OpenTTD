@@ -76,6 +76,11 @@
 #include <psp2/power.h>
 #endif
 
+#if defined(__SWITCH__) && defined(ENABLE_NETWORK)
+// socketInitializeDefault() and socketExit() needed for networking on Switch
+#include <switch.h>
+#endif
+
 void CallLandscapeTick();
 void IncreaseDate();
 void DoPaletteAnimations();
@@ -610,8 +615,12 @@ int openttd_main(int argc, char *argv[])
 	bool dedicated = false;
 	char *debuglog_conn = NULL;
 
+#if defined(__SWITCH__)
+	bool _dedicated_forks = false;
+#else
 	extern bool _dedicated_forks;
 	_dedicated_forks = false;
+#endif
 #endif /* ENABLE_NETWORK */
 
 	_game_mode = GM_MENU;
@@ -775,6 +784,10 @@ int openttd_main(int argc, char *argv[])
 #if defined(ENABLE_NETWORK)
 	if (dedicated) DEBUG(net, 0, "Starting dedicated version %s", _openttd_revision);
 	if (_dedicated_forks && !dedicated) _dedicated_forks = false;
+
+#if defined(__SWITCH__)
+	socketInitializeDefault();
+#endif
 
 #if defined(UNIX) && !defined(__MORPHOS__)
 	/* We must fork here, or we'll end up without some resources we need (like sockets) */
@@ -983,6 +996,9 @@ exit_normal:
 	if (_log_fd != NULL) {
 		fclose(_log_fd);
 	}
+#if defined(__SWITCH__)
+	socketExit();
+#endif
 #endif /* ENABLE_NETWORK */
 
 	return ret;

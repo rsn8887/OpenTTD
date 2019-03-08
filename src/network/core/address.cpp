@@ -325,8 +325,11 @@ static SOCKET ConnectLoopProc(addrinfo *runp)
 SOCKET NetworkAddress::Connect()
 {
 	DEBUG(net, 1, "Connecting to %s", this->GetAddressAsString());
-
+#ifdef __SWITCH__
+	return this->Resolve(AF_INET, SOCK_STREAM, AI_ADDRCONFIG, NULL, ConnectLoopProc);
+#else
 	return this->Resolve(AF_UNSPEC, SOCK_STREAM, AI_ADDRCONFIG, NULL, ConnectLoopProc);
+#endif
 }
 
 /**
@@ -397,9 +400,15 @@ void NetworkAddress::Listen(int socktype, SocketList *sockets)
 	if (this->address_length == 0 && this->address.ss_family == AF_UNSPEC &&
 			StrEmpty(this->hostname) && this->GetPort() == 0) {
 		this->Resolve(AF_INET,  socktype, AI_ADDRCONFIG | AI_PASSIVE, sockets, ListenLoopProc);
+#if !defined(__SWITCH__)
 		this->Resolve(AF_INET6, socktype, AI_ADDRCONFIG | AI_PASSIVE, sockets, ListenLoopProc);
+#endif
 	} else {
+#if defined(__SWITCH__)
+		this->Resolve(AF_INET, socktype, AI_ADDRCONFIG | AI_PASSIVE, sockets, ListenLoopProc);
+#else
 		this->Resolve(AF_UNSPEC, socktype, AI_ADDRCONFIG | AI_PASSIVE, sockets, ListenLoopProc);
+#endif
 	}
 }
 
