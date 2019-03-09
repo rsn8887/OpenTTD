@@ -234,6 +234,15 @@ SOCKET NetworkAddress::Resolve(int family, int socktype, int flags, SocketList *
 	char port_name[6];
 	seprintf(port_name, lastof(port_name), "%u", this->GetPort());
 
+//DEBUGSWITCH
+		FILE *pFile;
+		pFile = fopen("/switch/openttd/mylog.txt","w+");
+		if (pFile != NULL)
+		{
+			fprintf(pFile, "L: 240 starting resolve: %s %u", this->hostname, this->GetPort());
+			fclose (pFile);
+		}
+//ENDDEBUGSWITCH
 	bool reset_hostname = false;
 	/* Setting both hostname to NULL and port to 0 is not allowed.
 	 * As port 0 means bind to any port, the other must mean that
@@ -245,11 +254,44 @@ SOCKET NetworkAddress::Resolve(int family, int socktype, int flags, SocketList *
 		strecpy(this->hostname, fam == AF_INET ? "0.0.0.0" : "::", lastof(this->hostname));
 	}
 
+#if defined(__SWITCH__)
+	struct addrinfo new_ai;
+	ai = &new_ai;
+	int e = 0;
+	struct hostent *he = gethostbyname(this->hostname);
+	if (he == NULL) {
+		e = 1;
+	} else {
+		//for (int i = 0; new_hostent->h_addr[i] != NULL; i++) {
+		struct sockaddr_in addr;
+		memcpy(&addr.sin_addr, he->h_addr_list[0], he->h_length);
+		addr.sin_family = AF_INET;
+		addr.sin_port = this->GetPort();
+		ai->ai_family = he->h_addrtype;
+		ai->ai_flags = flags;
+		ai->ai_socktype = socktype;
+		ai->ai_addr = (struct sockaddr *)&addr;
+		ai->ai_addrlen = he->h_length;
+		ai->ai_next = NULL;
+	}
+#else
 	int e = getaddrinfo(StrEmpty(this->hostname) ? NULL : this->hostname, port_name, &hints, &ai);
+#endif
 
 	if (reset_hostname) strecpy(this->hostname, "", lastof(this->hostname));
 
 	if (e != 0) {
+//DEBUGSWITCH
+		FILE *pFile;
+		pFile = fopen("/switch/openttd/mylog.txt","w+");
+		if (pFile != NULL)
+		{
+			fprintf(pFile,"getaddrinfo for hostname \"%s\", port %s, address family %s and socket type %s failed: %s %d",
+				this->hostname, port_name, AddressFamilyAsString(family), SocketTypeAsString(socktype), FS2OTTD(gai_strerror(e)), e);
+			fclose (pFile);
+		}
+//ENDDEBUGSWITCH
+
 		if (func != ResolveLoopProc) {
 			DEBUG(net, 0, "getaddrinfo for hostname \"%s\", port %s, address family %s and socket type %s failed: %s",
 				this->hostname, port_name, AddressFamilyAsString(family), SocketTypeAsString(socktype), FS2OTTD(gai_strerror(e)));
@@ -280,8 +322,9 @@ SOCKET NetworkAddress::Resolve(int family, int socktype, int flags, SocketList *
 		(*sockets)[addr] = sock;
 		sock = INVALID_SOCKET;
 	}
+#if !defined(__SWITCH__)
 	freeaddrinfo (ai);
-
+#endif
 	return sock;
 }
 
@@ -298,21 +341,70 @@ static SOCKET ConnectLoopProc(addrinfo *runp)
 
 	SOCKET sock = socket(runp->ai_family, runp->ai_socktype, runp->ai_protocol);
 	if (sock == INVALID_SOCKET) {
+//DEBUGSWITCH
+		FILE *pFile;
+		pFile = fopen ("/switch/openttd/mylog.txt","w+");
+		if (pFile != NULL)
+		{
+			fprintf(pFile, "L: 306 [%s] could not create %s socket: %s", type, family, address);
+			fclose (pFile);
+		}
+//ENDDEBUGSWITCH
 		DEBUG(net, 1, "[%s] could not create %s socket: %s", type, family, strerror(errno));
 		return INVALID_SOCKET;
 	}
 
-	if (!SetNoDelay(sock)) DEBUG(net, 1, "[%s] setting TCP_NODELAY failed", type);
+	if (!SetNoDelay(sock)) {
+		DEBUG(net, 1, "[%s] setting TCP_NODELAY failed", type);
+//DEBUGSWITCH
+		FILE *pFile;
+		pFile = fopen ("/switch/openttd/mylog.txt","w+");
+		if (pFile != NULL)
+		{
+			fprintf(pFile, "L: 321 [%s] setting TCP_NODELAY failed: %s %s", type, family, address);
+			fclose (pFile);
+		}
+	}
+//ENDDEBUGSWITCH
 
 	if (connect(sock, runp->ai_addr, (int)runp->ai_addrlen) != 0) {
+//DEBUGSWITCH
+		FILE *pFile;
+		pFile = fopen("/switch/openttd/mylog.txt","w+");
+		if (pFile != NULL)
+		{
+			fprintf(pFile, "L: 333 [%s] could not connect %s socket: %s", type, family, address);
+			fclose(pFile);
+		}
+//ENDDEBUGSWITCH
+
 		DEBUG(net, 1, "[%s] could not connect %s socket: %s", type, family, strerror(errno));
 		closesocket(sock);
 		return INVALID_SOCKET;
 	}
 
 	/* Connection succeeded */
-	if (!SetNonBlocking(sock)) DEBUG(net, 0, "[%s] setting non-blocking mode failed", type);
-
+	if (!SetNonBlocking(sock)) {
+		DEBUG(net, 0, "[%s] setting non-blocking mode failed", type);
+//DEBUGSWITCH
+		FILE *pFile;
+		pFile = fopen("/switch/openttd/mylog.txt","w+");
+		if (pFile != NULL)
+		{
+			fprintf(pFile, "L: 351 [%s] setting non-blicking mode failed %s: %s", type, family, address);
+			fclose (pFile);
+		}
+//ENDDEBUGSWITCH
+	}
+	//DEBUGSWITCH
+			FILE *pFile;
+			pFile = fopen ("/switch/openttd/mylog.txt","w+");
+			if (pFile != NULL)
+			{
+				fprintf(pFile, "[%s] connected to %s", type, address);
+				fclose (pFile);
+			}
+	//ENDDEBUGSWITCH
 	DEBUG(net, 1, "[%s] connected to %s", type, address);
 
 	return sock;
@@ -325,7 +417,15 @@ static SOCKET ConnectLoopProc(addrinfo *runp)
 SOCKET NetworkAddress::Connect()
 {
 	DEBUG(net, 1, "Connecting to %s", this->GetAddressAsString());
-
+//DEBUGSWITCH
+		FILE *pFile;
+		pFile = fopen("/switch/openttd/mylog.txt","w+");
+		if (pFile != NULL)
+		{
+			fprintf(pFile, "L: 391 Connecting to %s", this->GetAddressAsString());
+			fclose (pFile);
+		}
+//ENDDEBUGSWITCH
 	return this->Resolve(AF_UNSPEC, SOCK_STREAM, AI_ADDRCONFIG, NULL, ConnectLoopProc);
 }
 
