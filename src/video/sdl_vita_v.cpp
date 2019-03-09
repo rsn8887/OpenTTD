@@ -35,10 +35,12 @@
 int _last_mouse_x = 0;
 int _last_mouse_y = 0;
 
-static int _hires_dx = 0; // sub-pixel-precision counters to allow slow pointer motion of <1 pixel per frame 
-static int _hires_dy = 0;
-static int _pressed_right_stick_dirs[4] = { 0, 0, 0, 0 };
+int _hires_dx = 0; // sub-pixel-precision counters to allow slow pointer motion of <1 pixel per frame
+int _hires_dy = 0;
+int _pressed_right_stick_dirs[4] = { 0, 0, 0, 0 };
 static int _pressed_cursor_keys[4] = { 0, 0, 0, 0 };
+int _fast_mouse = 0;
+int _slow_mouse = 0;
 
 static void RescaleAnalog(int *x, int *y, int dead);
 static void CreateAndPushSdlKeyEvent(uint32_t event_type, SDL_Keycode key);
@@ -312,7 +314,13 @@ static void HandleAnalogSticks(void)
 	_hires_dx += left_x; // sub-pixel precision to allow slow mouse motion at speeds < 1 pixel/frame
 	_hires_dy += left_y;
 	
-	const int slowdown = 6144;
+	int slowdown = 6144;
+
+	if (_fast_mouse)
+		slowdown /= 3;
+
+	if (_slow_mouse)
+		slowdown *= 8;
 	
 	if (_hires_dx != 0 || _hires_dy != 0) {
 		int xrel = _hires_dx / slowdown;
@@ -753,10 +761,24 @@ int VideoDriver_SDL::PollEvent()
 				_left_button_down = true;
 				HandleMouseEvents();
 			}
+#if defined(__SWITCH__)
+			else if (ev.jbutton.button == VITA_JOY_TRIANGLE)
+			{
+				_fast_mouse = 1;
+				_hires_dx = 0;
+				_hires_dy = 0;
+			}
+			else if (ev.jbutton.button == VITA_JOY_SQUARE)
+			{
+				_slow_mouse = 1;
+				_hires_dx = 0;
+				_hires_dy = 0;
+			}
+#endif
 			// Just pretend we're wheeling the mouse wheel
 			// than implementing this properly
 #if defined(__SWITCH__)
-			else if ((ev.jbutton.button == VITA_JOY_SQUARE) || (ev.jbutton.button == SWITCH_JOY_ZL))
+			else if (ev.jbutton.button == SWITCH_JOY_ZL)
 #else
 			else if (ev.jbutton.button == VITA_JOY_SQUARE)
 #endif
@@ -767,7 +789,7 @@ int VideoDriver_SDL::PollEvent()
 
 			}
 #if defined(__SWITCH__)
-			else if ((ev.jbutton.button == VITA_JOY_TRIANGLE) || (ev.jbutton.button == SWITCH_JOY_ZR))
+			else if (ev.jbutton.button == SWITCH_JOY_ZR)
 #else
 			else if (ev.jbutton.button == VITA_JOY_TRIANGLE)
 #endif
@@ -798,6 +820,20 @@ int VideoDriver_SDL::PollEvent()
 				_left_button_clicked = false;
 				HandleMouseEvents();
 			}
+#if defined(__SWITCH__)
+			else if (ev.jbutton.button == VITA_JOY_TRIANGLE)
+			{
+				_fast_mouse = 0;
+				_hires_dx = 0;
+				_hires_dy = 0;
+			}
+			else if (ev.jbutton.button == VITA_JOY_SQUARE)
+			{
+				_slow_mouse = 0;
+				_hires_dx = 0;
+				_hires_dy = 0;
+			}
+#endif
 			else
 			{
 				uint8 tmp = (ev.jbutton.button == VITA_JOY_DOWN ? OTTD_DIR_DOWN : 0) |
