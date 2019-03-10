@@ -39,8 +39,8 @@ int _hires_dx = 0; // sub-pixel-precision counters to allow slow pointer motion 
 int _hires_dy = 0;
 int _pressed_right_stick_dirs[4] = { 0, 0, 0, 0 };
 static int _pressed_cursor_keys[4] = { 0, 0, 0, 0 };
-int _fast_mouse = 0;
-int _slow_mouse = 0;
+static int _fast_mouse = 0;
+static int _slow_mouse = 0;
 
 static void RescaleAnalog(int *x, int *y, int dead);
 static void CreateAndPushSdlKeyEvent(uint32_t event_type, SDL_Keycode key);
