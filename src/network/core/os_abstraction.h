@@ -224,7 +224,7 @@ static inline bool SetNonBlocking(SOCKET d)
 static inline bool SetNoDelay(SOCKET d)
 {
 	/* XXX should this be done at all? */
-#if !defined(BEOS_NET_SERVER) /* not implemented on BeOS net_server */
+#if !defined(BEOS_NET_SERVER) && !defined(__SWITCH__) /* not implemented on BeOS net_server */
 	int b = 1;
 	/* The (const char*) cast is needed for windows */
 	return setsockopt(d, IPPROTO_TCP, TCP_NODELAY, (const char*)&b, sizeof(b)) == 0;

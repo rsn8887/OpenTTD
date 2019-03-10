@@ -20,6 +20,9 @@
 
 #include "../../safeguards.h"
 
+#if defined(__SWITCH__)
+#include <switch.h>
+#endif
 
 #ifdef __MORPHOS__
 /* the library base is required here */
@@ -75,6 +78,10 @@ bool NetworkCoreInitialize()
 	}
 #endif /* _WIN32 */
 
+#if defined(__SWITCH__)
+	socketInitializeDefault();
+#endif
+
 	return true;
 }
 
@@ -96,6 +103,10 @@ void NetworkCoreShutdown()
 
 #if defined(_WIN32)
 	WSACleanup();
+#endif
+
+#if defined(__SWITCH__)
+	socketExit();
 #endif
 }
 
