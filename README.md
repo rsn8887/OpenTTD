@@ -67,7 +67,7 @@ You then get the choice to select `original dos` graphics, sounds, and music whe
 
 # Building
 
-To compile from source, first build and install libtimidity (midi music library):
+libtimidity:
 ```
 git clone https://github.com/rsn8887/libtimidity
 cd libtimidity/src/
@@ -77,14 +77,36 @@ cp timidity.h $DEVKITPRO/portlibs/switch/include/
 cp ../libtimidity.pc $DEVKITPRO/portlibs/lib/pkgconfig/
 ```
 
+liblzo2: 
+Download https://www.oberhumer.com/opensource/lzo/download/lzo-2.10.tar.gz and extract, then
+```
+cd lzo-2.10
+./configure CFLAGS='-fPIC' CXXFLAGS='-fPIC' --host aarch64-none-elf --prefix $DEVKITPRO/portlibs/switch/ --disable-shared --enable-static
+make clean
+make -j12
+make install
+```
+
+liblzma:
+Download and extract xz-5.2.4.tar.gz from https://tukaani.org/xz/ , then
+```
+cd xz-5.2.4
+./configure CFLAGS='-fPIC' CXXFLAGS='-fPIC' --enable-threads=no --host aarch64-none-elf --prefix $DEVKITPRO/portlibs/switch/ --disable-shared --enable-static
+cd src/liblzma
+make clean
+make -j12
+make install
+```
+
 Then configure and build OpenTTD from my switch branch:
 ```
 git clone https://github.com/rsn8887/openttd
 git checkout switch
-PKG_CONFIG_PATH=$DEVKITPRO/portlibs/switch/lib/pkgconfig ./configure --os=SWITCH --host aarch64-none-elf --enable-static --prefix=/opt/devkitpro --with-sdl="pkg-config sdl2" --without-fontconfig --disable-strip --enable-network=0 --without-liblzo2 --without-lzma --without-threads --with-libtimidity
+PKG_CONFIG_PATH=$DEVKITPRO/portlibs/switch/lib/pkgconfig ./configure --os=SWITCH --host aarch64-none-elf --enable-static --prefix=/opt/devkitpro --with-sdl="pkg-config sdl2" --without-fontconfig --disable-strip --without-threads --with-libtimidity
 make -j12
-cd cmake
-cmake ./ -DSWITCH_BUILD=ON
+cd os/switch
+git clean -f
+cmake ./
 make openttd_switch.zip
 ```
 
@@ -96,7 +118,8 @@ openttd_switch.zip can be found in __cmake/__
 1.02 (wip)
 
 - compile with lzma and lzo2 compression libraries to allow loading old compressed savegames/scenarios
-- on Switch, map ZL/ZR to zoom in/out
+- map ZL/ZR to zoom in/out
+- hold square/triangle for slow/fast mouse to make it easier to position the pointer with the left stick 
 
 1.01
 
