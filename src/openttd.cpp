@@ -100,7 +100,7 @@ extern char *_config_file;
  */
 
 // Vita has no console so we'll forward it all over debugnet
-#if defined(__vita__) || defined(__SWITCH__)
+#if defined(__vita__)
 
 void CDECL usererror(const char *s, ...)
 {
@@ -111,7 +111,7 @@ void CDECL usererror(const char *s, ...)
 	vseprintf(buf, lastof(buf), s, va);
 	va_end(va);
 
-	//sceClibPrintf("usererror: %s\n", buf);
+	sceClibPrintf("usererror: %s\n", buf);
 }
 
 void CDECL error(const char *s, ...)
@@ -123,7 +123,7 @@ void CDECL error(const char *s, ...)
 	vseprintf(buf, lastof(buf), s, va);
 	va_end(va);
 
-	//sceClibPrintf("error: %s\n", buf);
+	sceClibPrintf("error: %s\n", buf);
 }
 
 void CDECL ShowInfoF(const char *s, ...)
@@ -135,7 +135,21 @@ void CDECL ShowInfoF(const char *s, ...)
 	vseprintf(buf, lastof(buf), s, va);
 	va_end(va);
 
-	//sceClibPrintf("ShowInfoF: %s\n", buf);
+	sceClibPrintf("ShowInfoF: %s\n", buf);
+}
+
+#elif defined(__SWITCH__)
+
+void CDECL usererror(const char *s, ...)
+{
+}
+
+void CDECL error(const char *s, ...)
+{
+}
+
+void CDECL ShowInfoF(const char *s, ...)
+{
 }
 
 #else

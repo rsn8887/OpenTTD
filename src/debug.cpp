@@ -144,12 +144,17 @@ static void debug_print(const char *dbg, const char *buf)
 		NKDbgPrintfW(OTTD2FS(buffer));
 #elif defined(WIN32) || defined(WIN64)
 		_fputts(OTTD2FS(buffer, true), stderr);
-#elif defined(__vita__) || defined(__SWITCH__)
-		//sceClibPrintf("%s\n", buf);
+#elif defined(__vita__)
+		sceClibPrintf("%s\n", buf);
 #elif defined(_WIN32)
 		TCHAR system_buf[512];
 		convert_to_fs(buffer, system_buf, lengthof(system_buf), true);
 		_fputts(system_buf, stderr);
+#elif defined(__SWITCH__)
+		FILE *logFile;
+		logFile = fopen("/switch/openttd/debuglog.txt","w+");
+		fputs(buffer, logFile);
+		fclose(logFile);
 #else
 		fputs(buffer, stderr);
 #endif
