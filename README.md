@@ -119,7 +119,7 @@ openttd_switch.zip can be found in __cmake/__
 
 - compile with lzma and lzo2 compression libraries to allow loading old compressed savegames/scenarios
 - map ZL/ZR to zoom in/out
-- hold square/triangle for slow/fast mouse to make it easier to position the pointer with the left stick 
+- hold square/triangle for slow/fast mouse to make it easier to position the pointer with the left stick
 
 1.01
 
