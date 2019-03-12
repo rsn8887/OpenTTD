@@ -151,10 +151,11 @@ static void debug_print(const char *dbg, const char *buf)
 		convert_to_fs(buffer, system_buf, lengthof(system_buf), true);
 		_fputts(system_buf, stderr);
 #elif defined(__SWITCH__)
-		FILE *logFile;
-		logFile = fopen("/switch/openttd/debuglog.txt","w+");
-		fputs(buffer, logFile);
-		fclose(logFile);
+		FILE *logFile = fopen("/switch/openttd/debuglog.txt","a");
+		if (logFile) {
+			fprintf(logFile, buffer);
+			fclose(logFile);
+		}
 #else
 		fputs(buffer, stderr);
 #endif
