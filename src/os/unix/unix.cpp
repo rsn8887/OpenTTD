@@ -41,6 +41,8 @@
 	#include <sys/mount.h>
 #elif (defined(_POSIX_VERSION) && _POSIX_VERSION >= 200112L) || defined(__GLIBC__)
 	#define HAS_STATVFS
+#elif defined(__SWITCH__)
+	#define HAS_STATVFS
 #endif
 
 #if defined(OPENBSD) || defined(__NetBSD__) || defined(__FreeBSD__)
@@ -112,9 +114,6 @@ bool FiosGetDiskFreeSpace(const char *path, uint64 *tot)
 #elif defined(__vita__)
 	uint64_t max_size = 0;
 	sceAppMgrGetDevInfo("ux0:", &max_size, &free);
-#elif defined(__SWITCH__)
-	// FIXME: need a way of finding free disk space on Switch here
-	free = 0;
 #endif
 	if (tot != NULL) *tot = free;
 	return true;

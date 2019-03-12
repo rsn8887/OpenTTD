@@ -614,7 +614,7 @@ int openttd_main(int argc, char *argv[])
 	Dimension resolution = {960, 544};
 #elif defined(__SWITCH__)
 	Dimension resolution = {960, 540};
-#elif
+#else
 	Dimension resolution = {0, 0};
 #endif
 	/* AfterNewGRFScan sets save_config to true after scanning completed. */
