@@ -41,6 +41,7 @@ int _pressed_right_stick_dirs[4] = { 0, 0, 0, 0 };
 static int _pressed_cursor_keys[4] = { 0, 0, 0, 0 };
 static int _fast_mouse = 0;
 static int _slow_mouse = 0;
+static int _mapping_preset = 0; // 0: mouse speed on shoulder, zoom on X/Y (default), 1: opposite
 
 static void RescaleAnalog(int *x, int *y, int dead);
 static void CreateAndPushSdlKeyEvent(uint32_t event_type, SDL_Keycode key);
@@ -762,13 +763,13 @@ int VideoDriver_SDL::PollEvent()
 				HandleMouseEvents();
 			}
 #if defined(__SWITCH__)
-			else if (ev.jbutton.button == SWITCH_JOY_ZL)
+			else if ((ev.jbutton.button == SWITCH_JOY_ZL && _mapping_preset == 0) || (ev.jbutton.button == VITA_JOY_TRIANGLE && _mapping_preset == 1)) 
 			{
 				_fast_mouse = 1;
 				_hires_dx = 0;
 				_hires_dy = 0;
 			}
-			else if (ev.jbutton.button == SWITCH_JOY_ZR)
+			else if ((ev.jbutton.button == SWITCH_JOY_ZR && _mapping_preset == 0) || (ev.jbutton.button == VITA_JOY_SQUARE && _mapping_preset == 1)) 
 			{
 				_slow_mouse = 1;
 				_hires_dx = 0;
@@ -777,19 +778,28 @@ int VideoDriver_SDL::PollEvent()
 #endif
 			// Just pretend we're wheeling the mouse wheel
 			// than implementing this properly
-			else if (ev.jbutton.button == VITA_JOY_SQUARE)
+			else if ((ev.jbutton.button == VITA_JOY_SQUARE && _mapping_preset == 0) || (ev.jbutton.button == SWITCH_JOY_ZL && _mapping_preset == 1)) 
 			{
 				// Zoom out
 				_cursor.wheel += 1;
 				HandleMouseEvents();
 
 			}
-			else if (ev.jbutton.button == VITA_JOY_TRIANGLE)
+			else if ((ev.jbutton.button == VITA_JOY_TRIANGLE && _mapping_preset == 0) || (ev.jbutton.button == SWITCH_JOY_ZR && _mapping_preset == 1)) 
 			{
 				// Zoom in
 				_cursor.wheel -= 1;
 				HandleMouseEvents();
 			}
+#ifdef __SWITCH__
+			else if (ev.jbutton.button == VITA_JOY_SELECT)
+			{
+				if (_mapping_preset == 1)
+					_mapping_preset = 0;
+				else
+					_mapping_preset = 1;
+			}
+#endif
 			// Map d-pad to arrow keys in order to pan screen
 			else
 			{
@@ -813,13 +823,13 @@ int VideoDriver_SDL::PollEvent()
 				HandleMouseEvents();
 			}
 #if defined(__SWITCH__)
-			else if (ev.jbutton.button == SWITCH_JOY_ZL)
+			else if ((ev.jbutton.button == SWITCH_JOY_ZL && _mapping_preset == 0) || (ev.jbutton.button == VITA_JOY_TRIANGLE && _mapping_preset == 1)) 
 			{
 				_fast_mouse = 0;
 				_hires_dx = 0;
 				_hires_dy = 0;
 			}
-			else if (ev.jbutton.button == SWITCH_JOY_ZR)
+			else if ((ev.jbutton.button == SWITCH_JOY_ZR && _mapping_preset == 0) || (ev.jbutton.button == VITA_JOY_SQUARE && _mapping_preset == 1)) 
 			{
 				_slow_mouse = 0;
 				_hires_dx = 0;
