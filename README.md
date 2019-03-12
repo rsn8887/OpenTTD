@@ -58,6 +58,8 @@ You then get the choice to select `original dos` graphics, sounds, and music whe
  - B/left trigger = right mouse click 
  - Y = zoom-in 
  - X = zoom-out 
+ - Hold ZL = speed up analog joystick mouse 
+ - Hold ZR = slow down analog joystick mouse, useful to precisely position the pointer
  - Double click A / double click right trigger over a text field = bring up on-screen keyboard
  - The touch screen is used for indirect mouse input, like on a laptop touchpad. Move a single finger to move the mouse pointer. Use short tap for left click. Hold a single finger while tapping a second finger for right click. Drag with two fingers to drag and drop.
 
@@ -118,8 +120,8 @@ openttd_switch.zip can be found in __cmake/__
 1.02 (wip)
 
 - compile with lzma and lzo2 compression libraries to allow loading old compressed savegames/scenarios
-- map ZL/ZR to zoom in/out
-- hold square/triangle for slow/fast mouse to make it easier to position the pointer with the left stick
+- hold ZR / ZL for slow / fast mouse to make it easier to position the pointer with the left stick
+- correctly display free disk space in load/save dialogs
 
 1.01
 
