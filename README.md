@@ -1,4 +1,4 @@
-# OpenTTD port for Switch v1.01
+# OpenTTD port for Switch
 
 This is my Switch port of OpenTTD, a re-implementation of Transport Tycoon Deluxe.
 
@@ -105,7 +105,7 @@ Then configure and build OpenTTD from my switch branch:
 ```
 git clone https://github.com/rsn8887/openttd
 git checkout switch
-PKG_CONFIG_PATH=$DEVKITPRO/portlibs/switch/lib/pkgconfig ./configure --os=SWITCH --host aarch64-none-elf --enable-static --prefix=/opt/devkitpro --with-sdl="pkg-config sdl2" --without-fontconfig --disable-strip --without-threads --with-libtimidity
+PKG_CONFIG_PATH=$DEVKITPRO/portlibs/switch/lib/pkgconfig ./configure --os=SWITCH --host aarch64-none-elf --enable-static --prefix=/opt/devkitpro --with-sdl="pkg-config sdl2" --without-fontconfig --disable-strip --without-threads --with-libtimidity --enable-debug=0
 make -j12
 cd os/switch
 git clean -f
@@ -118,7 +118,7 @@ openttd_switch.zip can be found in __cmake/__
 
 # Changelog
 
-1.02 (wip)
+1.02
 
 - compile with lzma and lzo2 compression libraries to allow loading old compressed savegames/scenarios
 - hold ZR / ZL for slow / fast mouse to make it easier to position the pointer with the left stick
