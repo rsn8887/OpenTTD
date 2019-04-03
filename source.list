@@ -465,11 +465,7 @@ depot_gui.cpp
 dock_gui.cpp
 engine_gui.cpp
 error_gui.cpp
-#if SWITCH
-	fios_gui_switch.cpp
-#else
-	fios_gui.cpp
-#end
+fios_gui.cpp
 framerate_gui.cpp
 genworld_gui.cpp
 goal_gui.cpp
