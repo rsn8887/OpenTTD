@@ -121,7 +121,7 @@ openttd_switch.zip can be found in __cmake/__
 1.03
 
 - bundle with working AI compatibility script files (fixes AI crashing)
-- bundle with pre-installed AI opponenta and support library scripts
+- bundle with pre-installed AI opponents and support library scripts
 
 1.02
 
