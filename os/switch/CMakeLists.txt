@@ -21,7 +21,7 @@ endif()
 set(SHORT_NAME openttd)
 project(${SHORT_NAME})
 
-set(SWITCH_VERSION "1.02")
+set(SWITCH_VERSION "1.03")
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     configure_file(../../objs/debug/${SHORT_NAME} ./${SHORT_NAME} COPYONLY)

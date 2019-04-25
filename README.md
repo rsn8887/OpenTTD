@@ -109,7 +109,7 @@ PKG_CONFIG_PATH=$DEVKITPRO/portlibs/switch/lib/pkgconfig ./configure --os=SWITCH
 make -j12
 cd os/switch
 git clean -f
-cmake ./
+cmake ./ -DCMAKE_BUILD_TYPE=Release
 make openttd_switch.zip
 ```
 
@@ -117,6 +117,11 @@ openttd_switch.zip can be found in __cmake/__
 
 
 # Changelog
+
+1.03
+
+- bundle with working AI compatibility script files (fixes AI crashing)
+- bundle with pre-installed AI opponenta and support library scripts
 
 1.02
 
