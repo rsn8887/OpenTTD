@@ -23,7 +23,11 @@ project(${SHORT_NAME})
 
 set(SWITCH_VERSION "1.02")
 
-configure_file(../../objs/release/${SHORT_NAME} ./${SHORT_NAME} COPYONLY)
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    configure_file(../../objs/debug/${SHORT_NAME} ./${SHORT_NAME} COPYONLY)
+else()
+    configure_file(../../objs/release/${SHORT_NAME} ./${SHORT_NAME} COPYONLY)
+endif()
 
 add_custom_target(${SHORT_NAME}.nro
   DEPENDS ${SHORT_NAME}

@@ -153,7 +153,7 @@ static void debug_print(const char *dbg, const char *buf)
 #elif defined(__SWITCH__)
 		FILE *logFile = fopen("/switch/openttd/debuglog.txt","a");
 		if (logFile) {
-			fprintf(logFile, buffer);
+			fprintf(logFile, buf);
 			fclose(logFile);
 		}
 #else
