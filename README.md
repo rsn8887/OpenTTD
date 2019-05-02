@@ -118,6 +118,10 @@ openttd_switch.zip can be found in __cmake/__
 
 # Changelog
 
+1.04
+
+- re-compile with libnx v2.2.0 to fix potential crashes with firmware 8.0.x
+
 1.03
 
 - bundle with working AI compatibility script files (fixes AI crashing)
