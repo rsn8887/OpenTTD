@@ -687,12 +687,15 @@ int VideoDriver_SDL::PollEvent()
 			// state, and generate corresponding mouse events there
 			break;
 		case SDL_MOUSEMOTION:
-			if (_cursor.UpdateCursorPosition(ev.motion.x, ev.motion.y, true)) {
-				SDL_CALL SDL_WarpMouseInWindow(_sdl_window, _cursor.pos.x, _cursor.pos.y);
+			if (_cursor.UpdateCursorPosition(ev.motion.x, ev.motion.y, false)) {
+				//SDL_CALL SDL_WarpMouseInWindow(_sdl_window, _cursor.pos.x, _cursor.pos.y);
+				// update joystick / touch mouse coords
+				_last_mouse_x = _cursor.pos.x;
+				_last_mouse_y = _cursor.pos.y;
+			} else {
+				_last_mouse_x = ev.motion.x;
+				_last_mouse_y = ev.motion.y;
 			}
-			// update joystick / touch mouse coords
-			_last_mouse_x = ev.motion.x;
-			_last_mouse_y = ev.motion.y;
 			HandleMouseEvents();
 			break;
 
