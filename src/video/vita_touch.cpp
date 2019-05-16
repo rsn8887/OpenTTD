@@ -24,6 +24,7 @@ static void set_mouse_button_event(SDL_Event *event, uint32_t type, uint8_t butt
 static int _vita_rear_touch = 0; // always disable rear_touch for now
 extern int _last_mouse_x;
 extern int _last_mouse_y;
+extern int _using_physical_mouse;
 
 static int _touch_initialized = 0;
 static unsigned int _simulated_click_start_time[SCE_TOUCH_PORT_MAX_NUM][2]; // initiation time of last simulated left or right click (zero if no click)
@@ -109,6 +110,7 @@ static void preprocess_events(SDL_Event *event)
 			break;
 		case SDL_FINGERMOTION:
 			preprocess_finger_motion(event);
+			_using_physical_mouse = 0;
 		break;
 	}
 }
@@ -320,7 +322,6 @@ void FinishSimulatedMouseClicks()
 			SDL_Event ev;
 			set_mouse_button_event(&ev, SDL_MOUSEBUTTONUP, simulated_button, _last_mouse_x, _last_mouse_y);
 			SDL_PushEvent(&ev);
-			
 			_simulated_click_start_time[port][i] = 0;
 		}
 	}

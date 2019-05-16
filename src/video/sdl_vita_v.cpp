@@ -38,6 +38,7 @@ int _last_mouse_y = 0;
 int _hires_dx = 0; // sub-pixel-precision counters to allow slow pointer motion of <1 pixel per frame
 int _hires_dy = 0;
 int _pressed_right_stick_dirs[4] = { 0, 0, 0, 0 };
+int _using_physical_mouse = 1; // need to distinguish virtual mousemotion from physical
 static int _pressed_cursor_keys[4] = { 0, 0, 0, 0 };
 static int _fast_mouse = 0;
 static int _slow_mouse = 0;
@@ -309,6 +310,7 @@ static void GetVideoModes()
 
 static void HandleAnalogSticks(void)
 {
+	_using_physical_mouse = 1;
 	int left_x = SDL_JoystickGetAxis(_sdl_joystick, 0);
 	int left_y = SDL_JoystickGetAxis(_sdl_joystick, 1);
 	RescaleAnalog(&left_x, &left_y, 2000);
@@ -348,6 +350,7 @@ static void HandleAnalogSticks(void)
 				y = VITA_DISPLAY_HEIGHT;
 				yrel = VITA_DISPLAY_HEIGHT - _last_mouse_y;
 			}
+			_using_physical_mouse = 0;
 			SDL_Event event;
 			event.type = SDL_MOUSEMOTION;
 			event.motion.x = x;
@@ -687,14 +690,20 @@ int VideoDriver_SDL::PollEvent()
 			// state, and generate corresponding mouse events there
 			break;
 		case SDL_MOUSEMOTION:
-			if (_cursor.UpdateCursorPosition(ev.motion.x, ev.motion.y, false)) {
-				//SDL_CALL SDL_WarpMouseInWindow(_sdl_window, _cursor.pos.x, _cursor.pos.y);
-				// update joystick / touch mouse coords
-				_last_mouse_x = _cursor.pos.x;
-				_last_mouse_y = _cursor.pos.y;
-			} else {
+			if (_using_physical_mouse) {
+				if (_cursor.UpdateCursorPosition(ev.motion.x, ev.motion.y, true)) {
+					SDL_CALL SDL_WarpMouseInWindow(_sdl_window, _cursor.pos.x, _cursor.pos.y);
+				}
 				_last_mouse_x = ev.motion.x;
 				_last_mouse_y = ev.motion.y;
+			} else {
+				if (_cursor.UpdateCursorPosition(ev.motion.x, ev.motion.y, false)) {
+					_last_mouse_x = _cursor.pos.x;
+					_last_mouse_y = _cursor.pos.y;
+				} else {
+					_last_mouse_x = ev.motion.x;
+					_last_mouse_y = ev.motion.y;
+				}
 			}
 			HandleMouseEvents();
 			break;
