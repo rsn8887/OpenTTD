@@ -117,6 +117,10 @@ openttd_switch.zip can be found in __cmake/__
 
 
 # Changelog
+1.06
+
+- re-compile with 9.0.0 support
+
 1.05
 
 - fix right click drag scrolling
