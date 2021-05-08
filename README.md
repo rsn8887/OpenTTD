@@ -15,7 +15,7 @@ Thanks to the many developers who worked on this game.
 
 Thanks to @angguss for his excellent Vita port, on which this Switch port is based.
 
-Thanks to my supporters on Patreon: Andyways, CountDuckula, Greg Gibson, Jesse Harlin, Özgür Karter, Matthew Machnee, and RadicalR.
+Thanks to my supporters on Patreon: Andyways, Count Duckula, Jesse Harlin, Thomas Luten, Matthew Machnee, Mored4u, Ibrahim Fazel Poor, RadicalR.
 
 # Installation
 
@@ -70,7 +70,7 @@ You then get the choice to select `original dos` graphics, sounds, and music whe
 
 # Building
 
-libtimidity:
+libtimidity (now included in pacman packages):
 ```
 git clone https://github.com/rsn8887/libtimidity
 cd libtimidity/src/
@@ -80,7 +80,7 @@ cp timidity.h $DEVKITPRO/portlibs/switch/include/
 cp ../libtimidity.pc $DEVKITPRO/portlibs/lib/pkgconfig/
 ```
 
-liblzo2: 
+liblzo2 (now included in pacman packages):
 Download https://www.oberhumer.com/opensource/lzo/download/lzo-2.10.tar.gz and extract, then
 ```
 cd lzo-2.10
@@ -90,7 +90,7 @@ make -j12
 make install
 ```
 
-liblzma:
+liblzma (now included in pacman packages):
 Download and extract xz-5.2.4.tar.gz from https://tukaani.org/xz/ , then
 ```
 cd xz-5.2.4
@@ -117,6 +117,10 @@ openttd_switch.zip can be found in __cmake/__
 
 
 # Changelog
+1.07
+
+- re-compile with 12.0.0 support
+
 1.06
 
 - re-compile with 9.0.0 support
